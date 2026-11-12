@@ -6,3 +6,4 @@ public/icons/*.png
 *.log
 popup-preview.html
 public/donate-qr.jpg
+docs/store-assets/*.zip
