@@ -231,7 +231,7 @@ const pressEscape = () => {
 };
 
 export interface ModelInfo { id: string; name: string; desc: string; paid: boolean }
-const CHAT_MODEL = (id: string) => !/image|live|tts|audio|veo|imagen|music|embed|robotics/i.test(id);
+const CHAT_MODEL = (id: string) => !/image|banana|nano|live|tts|audio|veo|imagen|music|embed|robotics/i.test(id);
 
 /** Mở bảng chọn model của AI Studio và đọc danh sách (các nút có chứa mã gemini-… / gemma-…). */
 async function openModelPicker(): Promise<{ b: HTMLElement; info: ModelInfo }[]> {
@@ -248,7 +248,8 @@ async function openModelPicker(): Promise<{ b: HTMLElement; info: ModelInfo }[]>
     const id = t.match(MODEL_ID)?.[1] ?? "";
     const at = t.indexOf(id);
     const name = t.slice(0, at).replace(/\b(spark|image_edit_auto)\b/g, "").replace(/(New)?(Paid)?\s*$/, "").replace(/\s+/g, " ").trim() || id;
-    const desc = t.slice(at + id.length).replace(/^\s*info\s*/i, "").slice(0, 110).trim();
+    const desc = t.slice(at + id.length).split(/attach_money/)[0]
+      .replace(/\b(spark|info|star|content_copy|image_edit_auto)\b/g, " ").replace(/\s+/g, " ").trim().slice(0, 110);
     return { b, info: { id, name, desc, paid: /paid|trả phí/i.test(t) } };
   }).filter((x) => x.info.id && CHAT_MODEL(x.info.id));
 }

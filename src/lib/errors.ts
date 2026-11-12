@@ -11,7 +11,7 @@ export function classifyError(message: string): ErrorKind {
 export function pickLighter<T extends { id: string; paid: boolean }>(items: T[], currentId: string): T | undefined {
   const score = (id: string) => (/lite/i.test(id) ? 3 : /gemma/i.test(id) ? 2 : /flash/i.test(id) ? 1 : 0);
   return items
-    .filter((x) => x.id && x.id !== currentId && !x.paid && !/image|live|tts|audio|veo|imagen|music|embed/i.test(x.id) && score(x.id) > 0)
+    .filter((x) => x.id && x.id !== currentId && !x.paid && !/image|banana|nano|live|tts|audio|veo|imagen|music|embed/i.test(x.id) && score(x.id) > 0)
     .map((x, i) => ({ x, i, s: score(x.id) }))
     .sort((a, b) => b.s - a.s || a.i - b.i)[0]?.x;
 }
