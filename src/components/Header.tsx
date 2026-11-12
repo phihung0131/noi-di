@@ -1,5 +1,5 @@
 import { useStore } from "@tanstack/react-store";
-import { BookMarked, ClipboardList, Lock, Plus, SlidersHorizontal, X } from "lucide-react";
+import { BookMarked, ChevronDown, ClipboardList, Cpu, Lock, Plus, SlidersHorizontal, X } from "lucide-react";
 import { appStore, isLocked, setDialog, setOn, summarize } from "@/lib/controller";
 import { langChip, MODES } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
@@ -28,6 +28,7 @@ export function Header() {
   const session = useStore(appStore, (s) => s.session);
   const turns = useStore(appStore, (s) => s.turns);
   const generating = useStore(appStore, (s) => s.generating);
+  const model = useStore(appStore, (s) => s.model);
   const locked = useStore(appStore, (s) => isLocked(s));
   const chips = [langChip(session.lang), MODES.find((m) => m.id === session.mode)?.label, session.level, session.output === "vi" ? "Giải thích tiếng Việt" : "Explain in English"];
   const canSummarize = turns.filter((t) => t.role === "user" && !t.hidden).length >= 1 && !generating;
@@ -44,6 +45,11 @@ export function Header() {
         </Tip>
       )}
       <div className="ml-auto flex items-center gap-1.5">
+        <Tip label="Đổi model AI Studio đang dùng">
+          <Button variant="outline" size="sm" className="max-w-[210px] font-normal" onClick={() => setDialog("model")} aria-label={`Model: ${model || "chưa rõ"}. Bấm để đổi`}>
+            <Cpu size={14} /><span className="truncate font-mono text-xs">{model || "model"}</span><ChevronDown size={14} />
+          </Button>
+        </Tip>
         <Trend turns={turns} />
         {canSummarize && <Tip label="Tổng kết buổi: điểm mạnh, lỗi lặp lại, việc cần luyện"><Button variant="ghost" size="icon" aria-label="Tổng kết buổi" onClick={() => void summarize()}><ClipboardList size={18} /></Button></Tip>}
         <Tip label="Sổ từ vựng"><Button variant="ghost" size="icon" aria-label="Sổ từ vựng" onClick={() => setDialog("notebook")}><BookMarked size={18} /></Button></Tip>

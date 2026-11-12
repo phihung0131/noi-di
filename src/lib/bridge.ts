@@ -223,24 +223,55 @@ const modelCard = () => {
 export const currentModelId = () => (modelCard()?.textContent ?? "").match(MODEL_ID)?.[1] ?? "";
 const pressEscape = () => (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
 
-/** Mở bảng chọn model của AI Studio và chuyển sang model nhẹ hơn. Trả về id model mới. */
-export async function switchToLighterModel(): Promise<string> {
+export interface ModelInfo { id: string; name: string; desc: string; paid: boolean }
+const CHAT_MODEL = (id: string) => !/image|live|tts|audio|veo|imagen|music|embed|robotics/i.test(id);
+
+/** Mở bảng chọn model của AI Studio và đọc danh sách (các nút có chứa mã gemini-… / gemma-…). */
+async function openModelPicker(): Promise<{ b: HTMLElement; info: ModelInfo }[]> {
   const card = modelCard();
   if (!card) throw new Error("Không thấy ô chọn model của AI Studio. Hãy thoát Nói Đi, đổi model trong AI Studio rồi quay lại.");
-  const cur = currentModelId();
   card.click();
-  // bất kỳ nút nào trong lớp phủ có chứa mã model (gemini-… / gemma-…)
   const buttons = await waitFor(() => {
     const l = Array.from((first(SEL.overlay) ?? document).querySelectorAll<HTMLElement>(CLICKABLE_ALL)).filter((b) => MODEL_ID.test(b.textContent ?? ""));
     return l.length >= 2 ? l : null;
   }, 6000);
   if (!buttons) { pressEscape(); throw new Error("Không đọc được danh sách model. Hãy đổi model thủ công trong AI Studio."); }
-  const items = buttons.map((b) => ({ b, id: (b.textContent ?? "").match(MODEL_ID)?.[1] ?? "", paid: /paid|trả phí/i.test(b.textContent ?? "") }));
-  const pick = pickLighter(items, cur);
-  if (!pick) { pressEscape(); throw new Error("Không tìm thấy model nhẹ hơn miễn phí. Hãy chọn model thủ công trong AI Studio."); }
-  pick.b.click();
-  await waitFor(() => !all(SEL.dialogs).some((d) => MODEL_ID.test(d.textContent ?? "") && d.querySelectorAll("button").length > 5), 4000);
-  return pick.id;
+  return buttons.map((b) => {
+    const t = (b.textContent ?? "").replace(/\s+/g, " ").trim();
+    const id = t.match(MODEL_ID)?.[1] ?? "";
+    const at = t.indexOf(id);
+    const name = t.slice(0, at).replace(/\b(spark|image_edit_auto)\b/g, "").replace(/\b(New|Paid)\b/g, "").replace(/\s+/g, " ").trim() || id;
+    const desc = t.slice(at + id.length).replace(/^\s*info\s*/i, "").slice(0, 110).trim();
+    return { b, info: { id, name, desc, paid: /paid|trả phí/i.test(t) } };
+  }).filter((x) => x.info.id && CHAT_MODEL(x.info.id));
+}
+const modelPickerClosed = () => waitFor(() => !all(SEL.dialogs).some((d) => MODEL_ID.test(d.textContent ?? "") && d.querySelectorAll("button").length > 5), 4000);
+
+export async function listModels(): Promise<ModelInfo[]> {
+  const items = await openModelPicker();
+  const out = items.map((x) => x.info);
+  pressEscape();
+  await modelPickerClosed();
+  return out;
+}
+
+export async function selectModel(id: string): Promise<void> {
+  const items = await openModelPicker();
+  const hit = items.find((x) => x.info.id === id);
+  if (!hit) { pressEscape(); throw new Error("Không tìm thấy model này trong AI Studio."); }
+  hit.b.click();
+  await modelPickerClosed();
+}
+
+/** Chuyển sang model nhẹ hơn (ưu tiên Lite, miễn phí). Trả về id model mới. */
+export async function switchToLighterModel(): Promise<string> {
+  const items = await openModelPicker();
+  const pick = pickLighter(items.map((x) => x.info), currentModelId());
+  const hit = pick && items.find((x) => x.info.id === pick.id);
+  if (!hit) { pressEscape(); throw new Error("Không tìm thấy model nhẹ hơn miễn phí. Hãy chọn model thủ công."); }
+  hit.b.click();
+  await modelPickerClosed();
+  return hit.info.id;
 }
 
 /** Thông báo ngắn (snackbar) của AI Studio, nếu có. */

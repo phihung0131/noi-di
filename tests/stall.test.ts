@@ -20,3 +20,13 @@ describe("isStalledState", () => {
   it("không báo với bản tổng kết", () =>
     expect(isStalledState([u("Tổng kết buổi"), m({ score: [{ key: "NATIVE", value: "60" }], feedback: "<p>x</p>" })], false)).toBe(false));
 });
+
+import { quickLabel } from "@/lib/controller";
+describe("quickLabel", () => {
+  it("nhận tin nhắn do extension gửi", () => {
+    expect(quickLabel("Câu khác")?.kind).toBe("skip");
+    expect(quickLabel("Tổng kết buổi")?.kind).toBe("summary");
+    expect(quickLabel("Phản hồi trước bị thiếu hoặc bị cắt. Hãy …")?.kind).toBe("retry");
+    expect(quickLabel("Tôi thích bóng đá")).toBeNull();
+  });
+});

@@ -1,5 +1,5 @@
 import { Store } from "@tanstack/store";
-import { applyPrompt, chatId, hydrate, isGenerating, isHydrating, isNewChatPage, health, lastDomActivity, native, snackbarText, switchToLighterModel, resetChatCache, sendText, snapshot } from "./bridge";
+import { applyPrompt, chatId, hydrate, isGenerating, isHydrating, isNewChatPage, currentModelId, health, lastDomActivity, native, snackbarText, switchToLighterModel, resetChatCache, selectModel, sendText, snapshot } from "./bridge";
 import { DEFAULT_CONFIG } from "./langs";
 import { mic } from "./recorder";
 import { speak, speechStore, stopSpeaking } from "./speech";
@@ -23,14 +23,16 @@ export interface AppState {
   sent: Record<number, SentRec>;
   playingRec: string | null;
   toast: { id: number; msg: string } | null;
-  dialog: null | "new" | "settings" | "notebook";
+  dialog: null | "new" | "settings" | "notebook" | "model";
+  /** Model đang chọn trong AI Studio */
+  model: string;
 }
 
 export const appStore = new Store<AppState>({
   on: false, ready: false, turns: [], generating: false, stalled: false, hydrating: false, chatId: null,
   session: { ...DEFAULT_CONFIG } as SessionConfig, prefs: DEFAULT_PREFS,
   rec: { state: "idle", startedAt: 0, ms: 0, url: null, peaks: [] },
-  sent: {}, playingRec: null, toast: null, dialog: null,
+  sent: {}, playingRec: null, toast: null, dialog: null, model: "",
 });
 const set = (p: Partial<AppState>) => appStore.setState((s) => ({ ...s, ...p }));
 const get = () => appStore.state;
@@ -157,6 +159,14 @@ export const sendRecording = () => guarded(async () => {
 const sendQuick = async (vi: string, en: string) => {
   try { await sendText(get().session.output === "en" ? en : vi); } catch (e) { toast((e as Error).message); }
 };
+/** Nhận ra tin nhắn do extension tự gửi để hiện gọn thay vì lộ nội dung kỹ thuật. */
+export function quickLabel(text: string): { kind: "retry" | "skip" | "summary"; label: string } | null {
+  if (/^(Phản hồi trước bị thiếu|Your previous reply was missing)/i.test(text)) return { kind: "retry", label: "Đã nhờ giám khảo trả lời lại" };
+  if (/^(Câu khác|Next question)$/i.test(text)) return { kind: "skip", label: "Đã đổi sang câu hỏi khác" };
+  if (/^(Tổng kết buổi|Summarize session)$/i.test(text)) return { kind: "summary", label: "Đã yêu cầu tổng kết buổi" };
+  return null;
+}
+
 /** Đổi sang câu hỏi khác mà không chấm. */
 export const skipQuestion = () => sendQuick("Câu khác", "Next question");
 /** Yêu cầu giám khảo trả lời lại khi lượt trước bị rỗng/lỗi. */
@@ -172,6 +182,14 @@ export async function switchModelAndRetry() {
     toast(`Đã chuyển sang ${id}. Đang gửi lại…`);
     await sleep(600);
     await retryReply();
+  } catch (e) { toast((e as Error).message); }
+}
+
+export async function pickModel(id: string) {
+  try {
+    await selectModel(id);
+    set({ model: id, dialog: null });
+    toast(`Đã chuyển sang ${id}.`);
   } catch (e) { toast((e as Error).message); }
 }
 
@@ -256,6 +274,8 @@ function tick() {
   const turns = snapshot();
   const gen = isGenerating();
   const stalled = stallCheck(turns, gen);
+  const model = currentModelId();
+  if (model && model !== get().model) set({ model });
   const same = turns.length === get().turns.length && turns.every((t, i) => t === get().turns[i]);
   if (!same || gen !== get().generating || stalled !== get().stalled || isHydrating() !== get().hydrating) set({ turns: same ? get().turns : turns, generating: gen, stalled, hydrating: isHydrating() });
 

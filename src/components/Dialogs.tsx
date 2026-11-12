@@ -1,7 +1,8 @@
 import { useStore } from "@tanstack/react-store";
-import { Lock } from "lucide-react";
+import { Check, Loader2, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { appStore, isLocked, setDialog, startNewSession, updatePrefs } from "@/lib/controller";
+import { listModels, type ModelInfo } from "@/lib/bridge";
+import { appStore, isLocked, pickModel, setDialog, startNewSession, updatePrefs } from "@/lib/controller";
 import { LANGS, LEVELS, MODES } from "@/lib/langs";
 import { onVoices, voicesFor } from "@/lib/speech";
 import { storage } from "@/lib/storage";
@@ -93,6 +94,50 @@ export function SettingsDialog() {
           <Field label="Giao diện"><Select ariaLabel="Giao diện" value={prefs.theme} onChange={(v) => void updatePrefs({ theme: v as "auto" | "light" | "dark" })} options={[{ value: "auto", label: "Theo hệ thống" }, { value: "light", label: "Sáng" }, { value: "dark", label: "Tối" }]} /></Field>
           <p className="text-xs leading-relaxed text-muted-foreground">Phím tắt: Alt+R ghi/dừng · Alt+P nghe lại · Alt+Enter gửi · Alt+L nghe lại câu hỏi.</p>
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function ModelDialog() {
+  const open = useStore(appStore, (s) => s.dialog === "model");
+  const current = useStore(appStore, (s) => s.model);
+  const [items, setItems] = useState<ModelInfo[] | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState("");
+  useEffect(() => {
+    if (!open) return;
+    setItems(null); setErr(""); setBusy("");
+    listModels().then(setItems).catch((e: Error) => setErr(e.message));
+  }, [open]);
+  return (
+    <Dialog open={open} onOpenChange={(o) => setDialog(o ? "model" : null)}>
+      <DialogContent title="Chọn model" description="Model nhẹ hơn (Lite) thường còn hạn mức khi model chính bị giới hạn." wide>
+        {!items && !err && <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground"><Loader2 size={16} className="animate-spin" />Đang đọc danh sách model từ AI Studio…</p>}
+        {err && <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm">{err}</p>}
+        {items && (
+          <ul className="max-h-[52vh] divide-y divide-border overflow-y-auto rounded-lg border border-border" role="radiogroup" aria-label="Model">
+            {items.map((m) => {
+              const on = m.id === current;
+              return (
+                <li key={m.id}>
+                  <button type="button" role="radio" aria-checked={on} disabled={!!busy}
+                    onClick={() => (on ? setDialog(null) : (setBusy(m.id), void pickModel(m.id)))}
+                    className={cn("flex w-full items-start gap-3 p-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60", on && "bg-primary/10")}>
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">{busy === m.id ? <Loader2 size={14} className="animate-spin" /> : on ? <Check size={16} /> : null}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">{m.name}</span>
+                        {m.paid && <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">Trả phí</span>}
+                        {/lite/i.test(m.id) && <span className="rounded-full bg-success/15 px-2 py-0.5 text-[11px] text-success">Nhẹ</span>}</span>
+                      <span className="block font-mono text-xs text-muted-foreground">{m.id}</span>
+                      {m.desc && <span className="mt-0.5 block text-xs text-muted-foreground">{m.desc}</span>}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </DialogContent>
     </Dialog>
   );

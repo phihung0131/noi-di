@@ -1,7 +1,7 @@
 import { useStore } from "@tanstack/react-store";
 import { AlertTriangle, ChevronDown, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
-import { appStore, retryReply, skipQuestion, switchModelAndRetry } from "@/lib/controller";
+import { appStore, retryReply, setDialog, skipQuestion, switchModelAndRetry } from "@/lib/controller";
 import { classifyError } from "@/lib/errors";
 import { speakable } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
@@ -67,6 +67,7 @@ function ErrorCard({ message, latest }: { message: string; latest: boolean }) {
       {latest && (
         <div className="mt-3 flex flex-wrap justify-end gap-2">
           {kind === "limit" && <Button size="sm" onClick={() => void switchModelAndRetry()}>Chuyển sang model nhẹ hơn</Button>}
+          {kind === "limit" && <Button size="sm" variant="outline" onClick={() => setDialog("model")}>Chọn model khác</Button>}
           <Button size="sm" variant="outline" onClick={() => void retryReply()}>Thử lại</Button>
         </div>
       )}
@@ -104,7 +105,9 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
     <article className="animate-fade-in space-y-4" aria-label="Giám khảo">
       {t.error && <ErrorCard message={t.error} latest={latest} />}
       {t.empty && streaming && <Skeleton />}
-      {simpleFb && !pending("FEEDBACK") && <div className="prose-fb px-1 text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.feedback! }} />}
+      {simpleFb && !pending("FEEDBACK") && (t.q || t.say
+        ? <div className="prose-fb px-1 text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.feedback! }} />
+        : <section className="rounded-lg border border-border bg-card p-4"><h3 className="mb-1 text-sm font-semibold">Giám khảo</h3><div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.feedback! }} /></section>)}
 
       {hasReview && (
         <section className="space-y-3 rounded-lg border border-border bg-card p-4">

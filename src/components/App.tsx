@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { appStore, setOn } from "@/lib/controller";
 import { cn } from "@/lib/utils";
 import { Dock } from "./Dock";
-import { NewSessionDialog, SettingsDialog } from "./Dialogs";
+import { ModelDialog, NewSessionDialog, SettingsDialog } from "./Dialogs";
 import { Feed } from "./Feed";
 import { Header } from "./Header";
 import { Logo } from "./Logo";
@@ -44,7 +44,7 @@ export function App() {
               <div className="fixed inset-0 z-[2147482000] flex flex-col bg-background text-foreground">
                 <Header />
                 <main className="relative min-h-0 flex-1"><Feed /><Dock /><Toast /></main>
-                <NewSessionDialog /><SettingsDialog /><NotebookDialog />
+                <NewSessionDialog /><SettingsDialog /><NotebookDialog /><ModelDialog />
               </div>
             )}
           </TooltipProvider>

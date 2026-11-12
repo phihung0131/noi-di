@@ -1,7 +1,7 @@
 import { useStore } from "@tanstack/react-store";
-import { Mic, Pause, Play } from "lucide-react";
+import { ClipboardList, Mic, Pause, Play, RefreshCw } from "lucide-react";
 import { memo } from "react";
-import { appStore, playRec } from "@/lib/controller";
+import { appStore, playRec, quickLabel } from "@/lib/controller";
 import type { UserTurn } from "@/lib/types";
 import { fmtTime } from "@/lib/utils";
 import { Button } from "./ui/button";
@@ -23,6 +23,11 @@ function MiniWave({ peaks }: { peaks: number[] }) {
 export const UserCard = memo(function UserCard({ turn }: { turn: UserTurn }) {
   const rec = useStore(appStore, (s) => s.sent[turn.idx]);
   const playing = useStore(appStore, (s) => s.playingRec === `sent:${turn.idx}`);
+  const quick = quickLabel(turn.text);
+  if (quick) {
+    const Icon = quick.kind === "summary" ? ClipboardList : RefreshCw;
+    return <article className="flex justify-end" aria-label="Thao tác"><span className="flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs text-muted-foreground"><Icon size={13} />{quick.label}</span></article>;
+  }
   return (
     <article className="flex animate-fade-in justify-end" aria-label="Bạn">
       <div className="flex max-w-[85%] items-center gap-3 rounded-lg border border-border bg-muted/60 py-2 pl-2 pr-4">
