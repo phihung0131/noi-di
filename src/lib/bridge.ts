@@ -222,7 +222,13 @@ const modelCard = () => {
   return root ? (root.querySelector<HTMLElement>("button") ?? null) : null;
 };
 export const currentModelId = () => (modelCard()?.textContent ?? "").match(MODEL_ID)?.[1] ?? "";
-const pressEscape = () => (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
+/** Đóng bảng chọn model của AI Studio bằng nút đóng của nó. Không dùng phím Esc: Esc giả cũng đóng hộp thoại của Nói Đi. */
+const pressEscape = () => {
+  const d = all(SEL.dialogs).find((x) => MODEL_ID.test(x.textContent ?? "") && x.querySelectorAll("button").length > 5);
+  const close = d && byLabel(LABEL.close, d);
+  if (close) close.click();
+  else d?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
+};
 
 export interface ModelInfo { id: string; name: string; desc: string; paid: boolean }
 const CHAT_MODEL = (id: string) => !/image|live|tts|audio|veo|imagen|music|embed|robotics/i.test(id);
