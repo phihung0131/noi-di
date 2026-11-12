@@ -17,6 +17,10 @@ npm run build        # tạo dist/
 Mở `chrome://extensions` → bật Developer mode → Load unpacked → chọn thư mục này (có `manifest.json`).
 Sau mỗi lần build, bấm reload trên thẻ extension.
 
+## Popup
+
+Bấm biểu tượng Nói Đi trên thanh công cụ Chrome: nút **Bắt đầu nói**, **Buổi mới**, **Chọn model**, **Sổ từ vựng** (nghe lại, tìm, xoá) và **Cài đặt nhanh**. Popup điều khiển tab AI Studio đang mở qua tin nhắn của extension (`activeTab`, không xin quyền đọc mọi trang).
+
 ## Phát triển
 
 ```bash

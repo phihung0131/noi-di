@@ -330,10 +330,34 @@ export async function updatePrefs(p: Partial<Prefs>) {
 }
 export const setDialog = (d: AppState["dialog"]) => set({ dialog: d });
 
+/** Lệnh từ popup của extension (thanh công cụ Chrome). */
+function listenPopup() {
+  if (typeof chrome === "undefined" || !chrome.runtime?.onMessage) return;
+  chrome.runtime.onMessage.addListener((m: { noidi?: string }, _sender, reply) => {
+    const st = get();
+    switch (m?.noidi) {
+      case "status": {
+        const score = [...st.turns].reverse().map((t) => (t.role === "model" ? t.score?.find((x) => x.key === "NATIVE")?.value : undefined)).find(Boolean);
+        reply({ on: st.on, hasSession: st.turns.length > 0, rec: st.rec.state, model: st.model, session: st.session, generating: st.generating, score: score ? Number(score) : undefined });
+        break;
+      }
+      case "open": void setOn(true); reply({ ok: true }); break;
+      case "record": void (async () => { await setOn(true); if (get().turns.length > 0) void startRecording(); else set({ dialog: "new" }); })(); reply({ ok: true }); break;
+      case "new": void setOn(true).then(() => set({ dialog: "new" })); reply({ ok: true }); break;
+      case "model": void setOn(true).then(() => set({ dialog: "model" })); reply({ ok: true }); break;
+      default: return false;
+    }
+    return false;
+  });
+  // cài đặt đổi từ popup áp dụng ngay
+  chrome.storage?.onChanged?.addListener((ch) => { if (ch.prefs?.newValue) set({ prefs: { ...DEFAULT_PREFS, ...ch.prefs.newValue } }); });
+}
+
 export async function boot() {
   const [on, prefs] = await Promise.all([storage.on(), storage.prefs()]);
   set({ prefs, ready: true });
   await setOn(on);
+  listenPopup();
   let n = 0;
   setInterval(() => { n++; if (get().generating || n % 3 === 0) tick(); }, 350);
 

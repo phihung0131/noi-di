@@ -14,5 +14,5 @@ export default defineConfig({
     target: "es2022",
     lib: { entry: "src/content/main.tsx", formats: ["iife"], name: "NoiDi", fileName: () => "content.js" },
   },
-  test: { environment: "jsdom", include: ["tests/**/*.test.ts"] },
+  test: { environment: "jsdom", include: ["tests/**/*.test.{ts,tsx}"] },
 } as never);

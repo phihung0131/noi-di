@@ -22,6 +22,12 @@ export function App() {
   const [sysDark, setSysDark] = useState(() => matchMedia("(prefers-color-scheme: dark)").matches);
   const [portal, setPortal] = useState<HTMLElement | null>(null);
   useEffect(() => {
+    if (typeof chrome === "undefined" || !chrome.storage?.onChanged) return;
+    const h = (ch: Record<string, chrome.storage.StorageChange>) => { if (ch.notes) qc.setQueryData(["notes"], ch.notes.newValue ?? []); };
+    chrome.storage.onChanged.addListener(h);
+    return () => chrome.storage.onChanged.removeListener(h);
+  }, []);
+  useEffect(() => {
     const m = matchMedia("(prefers-color-scheme: dark)");
     const h = () => setSysDark(m.matches);
     m.addEventListener("change", h);

@@ -5,7 +5,8 @@
   "version": "2.0.0",
   "description": "Biến Google AI Studio thành phòng luyện nói: giám khảo AI, ghi âm có sóng, nghe lại, câu mẫu, chấm band, sổ từ vựng.",
   "permissions": [
-    "storage"
+    "storage",
+    "activeTab"
   ],
   "icons": {
     "16": "dist/icons/icon-16.png",
@@ -44,5 +45,15 @@
         "https://aistudio.google.com/*"
       ]
     }
-  ]
+  ],
+  "action": {
+    "default_title": "Nói Đi",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "dist/icons/icon-16.png",
+      "32": "dist/icons/icon-32.png",
+      "48": "dist/icons/icon-48.png",
+      "128": "dist/icons/icon-128.png"
+    }
+  }
 }

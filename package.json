@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "prepare:assets": "node scripts/prepare.mjs",
-    "dev": "npm run prepare:assets && vite build --watch",
-    "build": "npm run prepare:assets && tsc --noEmit && vite build",
+    "dev": "npm run prepare:assets && (vite build --watch & vite build -c vite.popup.config.ts --watch)",
+    "build": "npm run prepare:assets && tsc --noEmit && vite build && vite build -c vite.popup.config.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
