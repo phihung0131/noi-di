@@ -13,7 +13,7 @@ fs.copyFileSync(path.join(root, "scripts/icon.svg"), path.join(root, "public/ico
 
 // QR ủng hộ: thu nhỏ vừa đủ để quét được, nhẹ để đóng gói.
 const qrSrc = path.join(root, "assets/donate-qr-src.jpg");
-if (fs.existsSync(qrSrc)) await sharp(qrSrc).resize({ width: 760 }).jpeg({ quality: 90 }).toFile(path.join(root, "public/donate-qr.jpg"));
+if (fs.existsSync(qrSrc)) await sharp(qrSrc).resize({ width: 960 }).jpeg({ quality: 90 }).toFile(path.join(root, "public/donate-qr.jpg"));
 
 const fonts = [
   ["@fontsource/be-vietnam-pro", "be-vietnam-pro", ["latin", "vietnamese"], [400, 500, 600]],

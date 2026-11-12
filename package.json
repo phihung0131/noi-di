@@ -1,6 +1,27 @@
 {
   "name": "noi-di",
-  "version": "2.0.0",
+  "version": "1.0.0",
+  "description": "Nói Đi: tiện ích Chrome biến Google AI Studio thành phòng luyện nói ngoại ngữ với giám khảo AI.",
+  "license": "MIT",
+  "author": "phihung0131",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phihung0131/noi-di.git"
+  },
+  "homepage": "https://github.com/phihung0131/noi-di",
+  "bugs": {
+    "url": "https://github.com/phihung0131/noi-di/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "speaking-practice",
+    "language-learning",
+    "google-ai-studio",
+    "gemini",
+    "pronunciation",
+    "react",
+    "vietnamese"
+  ],
   "private": true,
   "type": "module",
   "scripts": {

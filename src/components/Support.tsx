@@ -43,7 +43,7 @@ export function DonateView({ open }: { open: (url: string) => void }) {
           <li key={t} className="flex items-start gap-2"><Check size={15} className="mt-0.5 shrink-0 text-success" /><span>{t}</span></li>
         ))}
       </ul>
-      <div className="mx-auto w-[190px] rounded-lg border border-border bg-white p-2 shadow-sm">
+      <div className="mx-auto w-[min(100%,280px)] rounded-lg border border-border bg-white p-2.5 shadow-sm">
         <img src={assetUrl("donate-qr.jpg")} alt={`Mã QR VietQR chuyển khoản tới ${b.owner}, ${b.name}`} className="h-auto w-full" />
       </div>
       <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
