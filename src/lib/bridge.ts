@@ -215,7 +215,8 @@ export async function applyPrompt(c: SessionConfig) {
 }
 
 /* ---------- đổi model ---------- */
-const MODEL_ID = /\b((?:gemini|gemma)-[a-z0-9.-]*[a-z0-9])\b/i;
+/** Mã model (gemini-… / gemma-…). Không dùng \b và không dùng cờ i: AI Studio dính chữ liền mã ("Litegemini-3.5-flash-liteOur…"), mã luôn viết thường còn chữ kề bên viết hoa. */
+export const MODEL_ID = /((?:gemini|gemma)-[a-z0-9.-]*[a-z0-9])/;
 const modelCard = () => {
   const root = first(SEL.modelSelector);
   return root ? (root.querySelector<HTMLElement>("button") ?? null) : null;
@@ -240,7 +241,7 @@ async function openModelPicker(): Promise<{ b: HTMLElement; info: ModelInfo }[]>
     const t = (b.textContent ?? "").replace(/\s+/g, " ").trim();
     const id = t.match(MODEL_ID)?.[1] ?? "";
     const at = t.indexOf(id);
-    const name = t.slice(0, at).replace(/\b(spark|image_edit_auto)\b/g, "").replace(/\b(New|Paid)\b/g, "").replace(/\s+/g, " ").trim() || id;
+    const name = t.slice(0, at).replace(/\b(spark|image_edit_auto)\b/g, "").replace(/(New)?(Paid)?\s*$/, "").replace(/\s+/g, " ").trim() || id;
     const desc = t.slice(at + id.length).replace(/^\s*info\s*/i, "").slice(0, 110).trim();
     return { b, info: { id, name, desc, paid: /paid|trả phí/i.test(t) } };
   }).filter((x) => x.info.id && CHAT_MODEL(x.info.id));
