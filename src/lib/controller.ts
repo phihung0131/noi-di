@@ -1,5 +1,5 @@
 import { Store } from "@tanstack/store";
-import { applyPrompt, chatId, hydrate, isGenerating, isHydrating, isNewChatPage, native, resetChatCache, sendText, snapshot } from "./bridge";
+import { applyPrompt, chatId, hydrate, isGenerating, isHydrating, isNewChatPage, lastDomActivity, native, resetChatCache, sendText, snapshot } from "./bridge";
 import { DEFAULT_CONFIG } from "./langs";
 import { mic } from "./recorder";
 import { speak, speechStore, stopSpeaking } from "./speech";
@@ -206,7 +206,8 @@ export function isStalledState(turns: Turn[], gen: boolean): boolean {
 function stallCheck(turns: Turn[], gen: boolean): boolean {
   if (!isStalledState(turns, gen)) { quietSince = 0; return false; }
   if (!quietSince) quietSince = Date.now();
-  return Date.now() - quietSince > 7000;
+  // phải im lặng cả về trạng thái lẫn DOM (AI Studio có lúc đang nghĩ mà nút Stop chưa hiện)
+  return Date.now() - quietSince > 7000 && Date.now() - lastDomActivity() > 20000;
 }
 
 function tick() {

@@ -22,7 +22,10 @@ const runButton = () => {
 /* ---------- đọc hội thoại (có cache vì AI Studio chỉ render turn đang hiện trên màn hình) ---------- */
 const cache = new Map<number, Turn>();
 const sigs = new Map<number, string>();
-export const resetChatCache = () => { cache.clear(); sigs.clear(); };
+let domChangedAt = Date.now();
+/** Lần cuối nội dung chat gốc thay đổi (kể cả phần "thinking" không hiển thị). */
+export const lastDomActivity = () => domChangedAt;
+export const resetChatCache = () => { cache.clear(); sigs.clear(); domChangedAt = Date.now(); };
 
 function parseTurn(el: Element, idx: number, userIdx: number): Turn {
   if (!el.classList.contains("model")) {
@@ -42,6 +45,7 @@ export function snapshot(): Turn[] {
     const sig = (isUser ? "u" : "m") + (el.textContent?.length ?? 0) + ":" + (el.querySelector("ms-audio-chunk") ? 1 : 0);
     const uIdx = isUser ? userIdx++ : -1;
     if (sigs.get(i) === sig && cache.has(i)) return;
+    domChangedAt = Date.now();
     const t = parseTurn(el, i, uIdx);
     const old = cache.get(i);
     // turn lazy chưa render (rỗng) không được ghi đè bản đã có
@@ -50,7 +54,7 @@ export function snapshot(): Turn[] {
     if (old && JSON.stringify(old) === JSON.stringify(t)) return;
     cache.set(i, t);
   });
-  for (const k of [...cache.keys()]) if (k >= els.length) { cache.delete(k); sigs.delete(k); }
+  for (const k of [...cache.keys()]) if (k >= els.length) { cache.delete(k); sigs.delete(k); domChangedAt = Date.now(); }
   return els.map((_, i) => cache.get(i)).filter((t): t is Turn => !!t);
 }
 
