@@ -24,7 +24,7 @@ export function Feed() {
   useLayoutEffect(() => {
     const el = scroller.current;
     if (el && stick.current) el.scrollTop = el.scrollHeight;
-  }, [turns, generating]);
+  }, [turns, generating, stalled]);
 
   const lastModel = turns.map((t) => t.role).lastIndexOf("model");
   const visible = turns.filter((t, i) => !(t.role === "user" && (t.hidden || t.empty)) && !(t.role === "model" && t.empty && !(generating && i === turns.length - 1)));
@@ -49,7 +49,7 @@ export function Feed() {
         })}
         {stalled && (
           <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
-            <span>Giám khảo chưa phản hồi. Có thể câu trả lời quá dài hoặc AI Studio gặp lỗi tạm thời.</span>
+            <span>Giám khảo chưa phản hồi hoặc phản hồi bị cắt ngang. Có thể câu trả lời quá dài hoặc AI Studio gặp lỗi tạm thời.</span>
             <Button size="sm" variant="outline" onClick={() => void retryReply()}>Yêu cầu trả lời lại</Button>
           </div>
         )}

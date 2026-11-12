@@ -137,8 +137,8 @@ const sendQuick = async (vi: string, en: string) => {
 export const skipQuestion = () => sendQuick("Câu khác", "Next question");
 /** Yêu cầu giám khảo trả lời lại khi lượt trước bị rỗng/lỗi. */
 export const retryReply = () => sendQuick(
-  "Bạn chưa trả lời. Hãy phản hồi lại câu trả lời trước của tôi, đúng giao thức marker.",
-  "You did not reply. Please answer my previous message again, using the marker protocol.",
+  "Phản hồi trước bị thiếu hoặc bị cắt. Hãy trả lời lại câu trả lời trước của tôi đầy đủ theo giao thức marker, kết thúc bằng @@VERDICT và @@Q.",
+  "Your previous reply was missing or cut off. Please answer my previous message again in full using the marker protocol, ending with @@VERDICT and @@Q.",
 );
 
 export async function summarize() {
@@ -191,11 +191,20 @@ async function onRoute() {
 }
 
 let quietSince = 0;
-/** Lượt cuối là của user (hoặc model rỗng), không còn sinh nội dung và đã im quá 7s. */
-function stallCheck(turns: Turn[], gen: boolean): boolean {
+/**
+ * Giám khảo "im lặng": lượt cuối là của user / model rỗng, hoặc model trả lời nửa chừng
+ * (đã chấm nhưng thiếu verdict lẫn câu hỏi, không phải bản tổng kết). Chờ 7s trước khi báo.
+ */
+export function isStalledState(turns: Turn[], gen: boolean): boolean {
   const last = turns[turns.length - 1];
-  const waiting = !!last && !gen && (last.role === "user" || last.empty);
-  if (!waiting) { quietSince = 0; return false; }
+  if (!last || gen) return false;
+  if (last.role === "user" || last.empty) return true;
+  const prevUser = [...turns].reverse().find((t) => t.role === "user");
+  const askedSummary = prevUser?.role === "user" && /tổng kết|summari[sz]e/i.test(prevUser.text);
+  return !!(last.transcript || last.score) && !last.verdict && !last.q && !askedSummary;
+}
+function stallCheck(turns: Turn[], gen: boolean): boolean {
+  if (!isStalledState(turns, gen)) { quietSince = 0; return false; }
   if (!quietSince) quietSince = Date.now();
   return Date.now() - quietSince > 7000;
 }
