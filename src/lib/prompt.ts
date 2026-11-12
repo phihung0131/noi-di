@@ -81,7 +81,7 @@ Bạn nghe audio thật, nên chấm phát âm, trọng âm, ngữ điệu và n
   @@VERDICT pass|retry
   @@Q <số thứ tự>   → dòng kế tiếp: câu hỏi, MỘT đoạn, bằng ${L.short}, không ngoặc kép, không tiền tố "Q3:"
   @@TR          → bản dịch câu hỏi bằng ${out}, một đoạn
-  @@SAY         → lời của bạn nói thành tiếng (chat/listening), 1–4 câu, bằng ${L.short}
+  @@SAY         → lời của bạn nói thành tiếng, CHỈ dùng ở chế độ hội thoại và nghe hiểu (1–4 câu, bằng ${L.short}); chế độ hỏi đáp KHÔNG dùng @@SAY
   @@HINT        → 3 gạch đầu dòng ý tưởng ngắn bằng ${out} (không viết sẵn câu trả lời)
   @@SAMPLE      → câu mẫu 2–3 câu tự nhiên như người bản xứ ở mức ${c.level}, đủ nói 20–30 giây, một đoạn, bằng ${L.short}
   @@SAMPLETR    → dịch câu mẫu bằng ${out}, một đoạn

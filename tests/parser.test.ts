@@ -34,6 +34,12 @@ describe("parseModelElement", () => {
     expect(t.tr).toBe("Bạn sống ở đâu?");
   });
 
+  it("tham số nằm ở dòng sau marker (cùng một đoạn)", () => {
+    const t = parseModelElement(el(`<p>@@SCORE<br>NATIVE 59 | PRON 60 | FLU 58</p><p>@@VERDICT<br>pass</p>`));
+    expect(t.score?.map((s) => `${s.key}=${s.value}`)).toEqual(["NATIVE=59", "PRON=60", "FLU=58"]);
+    expect(t.verdict).toBe("pass");
+  });
+
   it("stream dở: marker chưa đủ không làm vỡ", () => {
     const t = parseModelElement(el(`<p>@@Q 1</p><p>Where do</p><p>@@SAM</p>`));
     expect(t.q?.text).toBe("Where do");

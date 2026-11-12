@@ -35,6 +35,8 @@ interface Section { name: string; args: string; paras: string[]; html: string[] 
 const MARKER = /^\s*@@([A-Z]+)(?:[ \t]+(.*))?$/;
 const KNOWN = new Set(["PART", "Q", "SAY", "TR", "ROMAN", "HINT", "SAMPLE", "SAMPLETR", "SAMPLEROMAN", "TRANSCRIPT", "SCORE", "FEEDBACK", "VOCAB", "PRON", "VERDICT", "PREP"]);
 
+/** Tham số có thể nằm ngay trên dòng marker hoặc ở dòng kế tiếp (AI Studio gộp chung một đoạn). */
+const argText = (s: Section) => `${s.args} ${s.paras.join(" ")}`.trim();
 const unquote = (t: string) => t.replace(/^["“”'‘’「」『』]+|["“”'‘’「」『』]+$/g, "").trim();
 const oneLine = (paras: string[]) => paras.join(" ").replace(/\s+/g, " ").trim();
 
@@ -96,12 +98,12 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
   const vocab = get("VOCAB"); if (vocab) out.vocab = listItems(vocab, secBlocks.get(vocab));
   const pron = get("PRON"); if (pron) out.pron = listItems(pron, secBlocks.get(pron));
   const part = get("PART"); if (part) out.part = part.args.replace(/\D/g, "") || undefined;
-  const prep = get("PREP"); if (prep && /\d/.test(prep.args)) out.prep = parseInt(prep.args.replace(/\D/g, ""), 10);
-  const vd = get("VERDICT"); if (vd) out.verdict = /pass/i.test(vd.args) ? "pass" : /retry/i.test(vd.args) ? "retry" : undefined;
+  const prep = get("PREP"); if (prep && /\d/.test(argText(prep))) out.prep = parseInt(argText(prep).replace(/\D/g, ""), 10);
+  const vd = get("VERDICT"); if (vd) out.verdict = /pass/i.test(argText(vd)) ? "pass" : /retry/i.test(argText(vd)) ? "retry" : undefined;
   const sc = get("SCORE");
   if (sc) {
     const items: ScoreItem[] = [];
-    for (const m of sc.args.matchAll(/([A-Z]+)\s*[:=]?\s*([0-9]+(?:\.[0-9])?)/g)) items.push({ key: m[1], value: m[2] });
+    for (const m of argText(sc).matchAll(/([A-Z]+)\s*[:=]?\s*([0-9]+(?:\.[0-9])?)/g)) items.push({ key: m[1], value: m[2] });
     if (items.length) out.score = items;
   }
   // Model cũ / lệch giao thức: hiện nguyên văn như phần nhận xét.
