@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Luyện nói – AI Studio",
+  "version": "1.0.0",
+  "description": "Biến Google AI Studio thành trang luyện nói: thanh ghi âm nổi, câu mẫu ẩn/hiện, nghe bằng giọng Chrome, tự nạp prompt khi tạo chat mới.",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://aistudio.google.com/*"],
+      "js": ["prompt.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
