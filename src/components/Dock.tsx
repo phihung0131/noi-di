@@ -65,13 +65,14 @@ export function Dock() {
   const url = useStore(appStore, (s) => s.rec.url);
   const playing = useStore(appStore, (s) => s.playingRec === "draft");
   const generating = useStore(appStore, (s) => s.generating);
+  const hasSession = useStore(appStore, (s) => s.turns.length > 0);
   const busy = state === "starting" || state === "stopping" || state === "sending";
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4">
       <div className={cn("pointer-events-auto flex h-14 w-[min(520px,100%)] items-center gap-2.5 rounded-xl border bg-card px-2 shadow-lg transition-colors", state === "recording" ? "border-destructive/60" : "border-border")} role="group" aria-label="Ghi âm">
         {state === "idle" && (
-          <Tip label="Bắt đầu nói (Alt+R)" side="top"><Button size="icon" className="h-10 w-10 rounded-lg" onClick={() => void startRecording()} aria-label="Bắt đầu ghi âm"><Mic size={20} /></Button></Tip>
+          <Tip label={hasSession ? "Bắt đầu nói (Alt+R)" : "Tạo buổi mới trước khi ghi âm"} side="top"><span><Button size="icon" className="h-10 w-10 rounded-lg" disabled={!hasSession} onClick={() => void startRecording()} aria-label="Bắt đầu ghi âm"><Mic size={20} /></Button></span></Tip>
         )}
         {busy && <Button size="icon" className="h-10 w-10 rounded-lg" disabled aria-label="Đang xử lý"><Loader2 size={20} className="animate-spin" /></Button>}
         {state === "recording" && (
@@ -87,7 +88,7 @@ export function Dock() {
         {state === "idle" ? (
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <Wave />
-            <span className="hidden whitespace-nowrap text-xs text-muted-foreground sm:block">{generating ? "Giám khảo đang trả lời…" : "Bấm để nói · Alt+R"}</span>
+            <span className="hidden whitespace-nowrap text-xs text-muted-foreground sm:block">{!hasSession ? "Tạo buổi mới để bắt đầu" : generating ? "Giám khảo đang trả lời…" : "Bấm để nói · Alt+R"}</span>
           </div>
         ) : <Wave />}
 

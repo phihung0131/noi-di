@@ -1,7 +1,7 @@
 import { useStore } from "@tanstack/react-store";
 import { Loader2 } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
-import { appStore, isLocked, setDialog } from "@/lib/controller";
+import { appStore, isLocked, retryReply, setDialog } from "@/lib/controller";
 import { Logo } from "./Logo";
 import { Button } from "./ui/button";
 import { ExaminerCard } from "./ExaminerCard";
@@ -11,6 +11,7 @@ export function Feed() {
   const turns = useStore(appStore, (s) => s.turns);
   const generating = useStore(appStore, (s) => s.generating);
   const hydrating = useStore(appStore, (s) => s.hydrating);
+  const stalled = useStore(appStore, (s) => s.stalled);
   const locked = useStore(appStore, (s) => isLocked(s));
   const scroller = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -46,6 +47,12 @@ export function Feed() {
           const idx = turns.indexOf(t);
           return <ExaminerCard key={t.key} turn={t} latest={idx === lastModel} streaming={generating && idx === turns.length - 1} answered={idx < turns.length - 1} />;
         })}
+        {stalled && (
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
+            <span>Giám khảo chưa phản hồi. Có thể câu trả lời quá dài hoặc AI Studio gặp lỗi tạm thời.</span>
+            <Button size="sm" variant="outline" onClick={() => void retryReply()}>Yêu cầu trả lời lại</Button>
+          </div>
+        )}
         {generating && turns[turns.length - 1]?.role === "user" && (
           <div className="flex items-center gap-1.5 py-2" aria-label="Giám khảo đang soạn câu trả lời">
             {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 animate-dot rounded-full bg-muted-foreground" style={{ animationDelay: `${i * 0.18}s` }} />)}

@@ -1,7 +1,7 @@
 import { useStore } from "@tanstack/react-store";
-import { ChevronDown, Eye, Languages, Lightbulb, MessageSquareQuote, Timer } from "lucide-react";
+import { ChevronDown, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
-import { appStore } from "@/lib/controller";
+import { appStore, skipQuestion } from "@/lib/controller";
 import { speakable } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
 import { cn, fmtTime } from "@/lib/utils";
@@ -136,6 +136,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             {t.hint && <Button variant={open.hint ? "default" : "ghost"} size="sm" onClick={() => tgl("hint")} aria-pressed={!!open.hint}><Lightbulb size={16} />Gợi ý</Button>}
             {t.sample && <Button variant={open.sample ? "default" : "ghost"} size="sm" onClick={() => tgl("sample")} aria-pressed={!!open.sample}><MessageSquareQuote size={16} />Câu mẫu</Button>}
             {t.prep && latest && <Prep seconds={t.prep} />}
+            {latest && !streaming && <Button variant="ghost" size="sm" className="ml-auto" onClick={() => void skipQuestion()}><RefreshCw size={16} />Câu khác</Button>}
           </div>
           {t.tr && <Fold open={trOpen}><p className="text-[15px] text-muted-foreground">{t.tr}</p></Fold>}
           {t.hint && <Fold open={!!open.hint}><div className="rounded-lg bg-accent-soft/60 p-3"><div className="mb-1 text-sm font-medium">Gợi ý ý tưởng</div><div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.hint }} /></div></Fold>}

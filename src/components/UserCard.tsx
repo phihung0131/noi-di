@@ -37,7 +37,7 @@ export const UserCard = memo(function UserCard({ turn }: { turn: UserTurn }) {
         ) : turn.audio ? (
           <span className="flex items-center gap-2 px-2 text-sm text-muted-foreground"><Mic size={15} />Câu trả lời bằng giọng nói</span>
         ) : (
-          <span className="px-2 text-sm">{turn.text}</span>
+          <span className="line-clamp-6 whitespace-pre-line break-words px-2 text-sm" title={turn.text}>{turn.text}</span>
         )}
       </div>
     </article>

@@ -13,6 +13,8 @@ export interface AppState {
   ready: boolean;
   turns: Turn[];
   generating: boolean;
+  /** Giám khảo không trả lời (lượt rỗng / không có phản hồi) sau khi đã gửi */
+  stalled: boolean;
   hydrating: boolean;
   chatId: string | null;
   session: SessionConfig;
@@ -25,7 +27,7 @@ export interface AppState {
 }
 
 export const appStore = new Store<AppState>({
-  on: false, ready: false, turns: [], generating: false, hydrating: false, chatId: null,
+  on: false, ready: false, turns: [], generating: false, stalled: false, hydrating: false, chatId: null,
   session: { ...DEFAULT_CONFIG } as SessionConfig, prefs: DEFAULT_PREFS,
   rec: { state: "idle", startedAt: 0, ms: 0, url: null, peaks: [] },
   sent: {}, playingRec: null, toast: null, dialog: null,
@@ -128,6 +130,17 @@ export const sendRecording = () => guarded(async () => {
   setRec({ state: "idle", url: null, ms: 0, peaks: [] });
 }, "recorded");
 
+const sendQuick = async (vi: string, en: string) => {
+  try { await sendText(get().session.output === "en" ? en : vi); } catch (e) { toast((e as Error).message); }
+};
+/** Đổi sang câu hỏi khác mà không chấm. */
+export const skipQuestion = () => sendQuick("Câu khác", "Next question");
+/** Yêu cầu giám khảo trả lời lại khi lượt trước bị rỗng/lỗi. */
+export const retryReply = () => sendQuick(
+  "Bạn chưa trả lời. Hãy phản hồi lại câu trả lời trước của tôi, đúng giao thức marker.",
+  "You did not reply. Please answer my previous message again, using the marker protocol.",
+);
+
 export async function summarize() {
   try { await sendText(get().session.output === "en" ? "Summarize session" : "Tổng kết buổi"); } catch (e) { toast((e as Error).message); }
 }
@@ -177,6 +190,16 @@ async function onRoute() {
   } else if (get().on) void runPending();
 }
 
+let quietSince = 0;
+/** Lượt cuối là của user (hoặc model rỗng), không còn sinh nội dung và đã im quá 7s. */
+function stallCheck(turns: Turn[], gen: boolean): boolean {
+  const last = turns[turns.length - 1];
+  const waiting = !!last && !gen && (last.role === "user" || last.empty);
+  if (!waiting) { quietSince = 0; return false; }
+  if (!quietSince) quietSince = Date.now();
+  return Date.now() - quietSince > 7000;
+}
+
 function tick() {
   if (!get().on) return;
   const p = location.pathname;
@@ -184,8 +207,9 @@ function tick() {
 
   const turns = snapshot();
   const gen = isGenerating();
+  const stalled = stallCheck(turns, gen);
   const same = turns.length === get().turns.length && turns.every((t, i) => t === get().turns[i]);
-  if (!same || gen !== get().generating || isHydrating() !== get().hydrating) set({ turns: same ? get().turns : turns, generating: gen, hydrating: isHydrating() });
+  if (!same || gen !== get().generating || stalled !== get().stalled || isHydrating() !== get().hydrating) set({ turns: same ? get().turns : turns, generating: gen, stalled, hydrating: isHydrating() });
 
   // gắn cấu hình cho chat vừa tạo
   const id = chatId();
@@ -237,7 +261,7 @@ export async function boot() {
   window.addEventListener("keydown", (e) => {
     if (!get().on || !e.altKey) return;
     const s = get().rec.state;
-    if (e.code === "KeyR") { e.preventDefault(); if (s === "idle") void startRecording(); else if (s === "recording") void stopRecording(); }
+    if (e.code === "KeyR") { e.preventDefault(); if (s === "idle" && get().turns.length > 0) void startRecording(); else if (s === "recording") void stopRecording(); }
     else if (e.code === "Enter" && s === "recorded") { e.preventDefault(); void sendRecording(); }
     else if (e.code === "KeyP" && s === "recorded") { e.preventDefault(); playRec("draft", get().rec.url); }
     else if (e.code === "KeyL") { e.preventDefault(); playLatest(); }
