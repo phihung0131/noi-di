@@ -227,7 +227,7 @@ const pressEscape = () => {
   const d = all(SEL.dialogs).find((x) => MODEL_ID.test(x.textContent ?? "") && x.querySelectorAll("button").length > 5);
   const close = d && byLabel(LABEL.close, d);
   if (close) close.click();
-  else d?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
+  else first<HTMLElement>([".cdk-overlay-backdrop"])?.click();
 };
 
 export interface ModelInfo { id: string; name: string; desc: string; paid: boolean }

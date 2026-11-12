@@ -56,9 +56,11 @@ export const all = <T extends Element = HTMLElement>(cands: string[], root: Pare
 };
 
 const CLICKABLE = "button, [role=button], [role=menuitem], [role=option]";
-const labelOf = (el: Element) => `${(el as HTMLElement).innerText ?? el.textContent ?? ""} ${el.getAttribute("aria-label") ?? ""} ${el.getAttribute("title") ?? ""}`;
+const labelParts = (el: Element) => [(el as HTMLElement).innerText ?? el.textContent ?? "", el.getAttribute("aria-label") ?? "", el.getAttribute("title") ?? ""];
+/** Khớp nếu BẤT KỲ phần nào (chữ, aria-label, title) khớp: regex neo ^…$ mới dùng được với nút biểu tượng. */
+const matches = (re: RegExp, el: Element) => labelParts(el).some((t) => re.test(t));
 /** Tìm nút theo chữ/nhãn, không phụ thuộc tên thẻ hay class. */
 export const byLabel = (re: RegExp, root: ParentNode = document): HTMLElement | undefined =>
-  Array.from(root.querySelectorAll<HTMLElement>(CLICKABLE)).find((b) => re.test(labelOf(b)));
+  Array.from(root.querySelectorAll<HTMLElement>(CLICKABLE)).find((b) => matches(re, b));
 export const allByLabel = (re: RegExp, root: ParentNode = document): HTMLElement[] =>
-  Array.from(root.querySelectorAll<HTMLElement>(CLICKABLE)).filter((b) => re.test(labelOf(b)));
+  Array.from(root.querySelectorAll<HTMLElement>(CLICKABLE)).filter((b) => matches(re, b));

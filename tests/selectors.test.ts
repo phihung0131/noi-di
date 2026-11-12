@@ -10,6 +10,10 @@ describe("selectors", () => {
     expect(first(["[[bad"], d)).toBeNull();
     expect(all(["nope", "button"], d)).toHaveLength(1);
   });
+  it("nút biểu tượng: chữ 'close' + aria-label 'Close' vẫn khớp regex neo", () => {
+    const d = dom(`<button aria-label="Close">close</button>`);
+    expect(byLabel(LABEL.close, d)).toBeTruthy();
+  });
   it("byLabel dò theo chữ hoặc aria-label, kể cả tiếng Việt", () => {
     const d = dom(`<button aria-label="Start recording"></button><button>Dừng ghi</button><button>Close</button>`);
     expect(byLabel(LABEL.startRec, d)).toBeTruthy();
