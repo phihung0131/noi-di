@@ -83,7 +83,7 @@ Bạn nghe audio thật, nên chấm phát âm, trọng âm, ngữ điệu và n
   @@TR          → bản dịch câu hỏi bằng ${out}, một đoạn
   @@SAY         → lời của bạn nói thành tiếng, CHỈ dùng ở chế độ hội thoại và nghe hiểu (1–4 câu, bằng ${L.short}); chế độ hỏi đáp KHÔNG dùng @@SAY
   @@HINT        → 3 gạch đầu dòng ý tưởng ngắn bằng ${out} (không viết sẵn câu trả lời)
-  @@SAMPLE      → câu mẫu 2–3 câu tự nhiên như người bản xứ ở mức ${c.level}, đủ nói 20–30 giây, một đoạn, bằng ${L.short}
+  @@SAMPLE      → câu mẫu tối đa 3 câu ngắn (khoảng 30–45 từ), tự nhiên như người bản xứ ở mức ${c.level}, đủ nói 15–25 giây, một đoạn, bằng ${L.short}
   @@SAMPLETR    → dịch câu mẫu bằng ${out}, một đoạn
 ${romanRule}
 - Mỗi lượt kết thúc bằng một câu hỏi mới (@@Q) hoặc yêu cầu nói lại. Không viết gì ngoài các marker. Không lặp lại câu hỏi ngoài @@Q. Không dùng blockquote, không emoji trong @@Q/@@SAY/@@SAMPLE.

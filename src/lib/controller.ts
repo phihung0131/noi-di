@@ -134,6 +134,8 @@ export async function summarize() {
 
 /* ---------- buổi mới ---------- */
 let bindConfig: SessionConfig | null = null;
+/** Buổi vừa tạo: câu hỏi đầu tiên phải được tự đọc dù URL đổi giữa chừng. */
+let freshSession = false;
 
 async function startFlow(cfg: SessionConfig) {
   await applyPrompt(cfg);
@@ -144,6 +146,7 @@ async function runPending() {
   if (!p) return;
   await storage.setPending(null);
   bindConfig = p.config;
+  freshSession = true;
   set({ session: p.config });
   await sleep(800);
   try { await startFlow(p.config); toast("Đã nạp prompt và bắt đầu buổi mới."); } catch (e) { toast((e as Error).message); }
@@ -164,7 +167,7 @@ const played = new Set<string>();
 let hydrateKey = "";
 
 async function onRoute() {
-  resetChatCache(); played.clear(); primed = false; hydrateKey = "";
+  resetChatCache(); played.clear(); primed = freshSession; freshSession = false; hydrateKey = "";
   const id = chatId();
   set({ chatId: id, turns: [], sent: {} });
   if (id) {

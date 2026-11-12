@@ -104,7 +104,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
 
       {t.say && (
         <section className="rounded-lg border border-border bg-card p-4">
-          <p className="mb-2 text-sm text-muted-foreground">{mode === "listening" ? "Đoạn nghe" : "Giám khảo nói"}</p>
+          <p className="mb-2 text-sm text-muted-foreground">{mode === "listening" ? "Đoạn nghe" : mode === "chat" ? "Bạn trò chuyện nói" : "Giám khảo nói"}</p>
           {concealSay ? (
             <p className="font-serif text-lg text-muted-foreground">Nghe kỹ, chữ sẽ hiện sau khi bạn trả lời.</p>
           ) : (

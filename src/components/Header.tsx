@@ -16,7 +16,7 @@ function Trend({ turns }: { turns: unknown[] }) {
   return (
     <Tip label="Mức giống người bản xứ qua các lượt">
       <div className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1">
-        <svg width={w} height={h} aria-hidden="true" className="text-primary"><polyline points={pts} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" /></svg>
+        {bands.length > 1 && <svg width={w} height={h} aria-hidden="true" className="text-primary"><polyline points={pts} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" /></svg>}
         <span className="text-sm font-semibold tabular-nums">{Math.round(last)}%</span>
         {diff !== 0 && <span className={`text-xs tabular-nums ${diff > 0 ? "text-success" : "text-destructive"}`}>{diff > 0 ? "+" : ""}{Math.round(diff)}</span>}
       </div>
@@ -30,7 +30,7 @@ export function Header() {
   const generating = useStore(appStore, (s) => s.generating);
   const locked = useStore(appStore, (s) => isLocked(s));
   const chips = [LANGS[session.lang]?.short ?? session.lang, MODES.find((m) => m.id === session.mode)?.label, session.level, session.output === "vi" ? "Giải thích tiếng Việt" : "Explain in English"];
-  const canSummarize = turns.filter((t) => t.role === "user" && !t.hidden).length >= 2 && !generating;
+  const canSummarize = turns.filter((t) => t.role === "user" && !t.hidden).length >= 1 && !generating;
 
   return (
     <header className="relative z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background px-4">
