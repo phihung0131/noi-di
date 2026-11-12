@@ -27,7 +27,8 @@ export const resetChatCache = () => { cache.clear(); sigs.clear(); };
 function parseTurn(el: Element, idx: number, userIdx: number): Turn {
   if (!el.classList.contains("model")) {
     const text = (el.querySelector("ms-text-chunk")?.textContent ?? "").replace(/\s+/g, " ").trim();
-    return { role: "user", key: "u" + idx, idx: userIdx, text, audio: !!el.querySelector("ms-audio-chunk, ms-prompt-audio"), hidden: userIdx === 0 && /^(bắt đầu|start)$/i.test(text) };
+    const audio = !!el.querySelector("ms-audio-chunk, ms-prompt-audio");
+    return { role: "user", key: "u" + idx, idx: userIdx, text, audio, hidden: userIdx === 0 && /^(bắt đầu|start)$/i.test(text), empty: !text && !audio };
   }
   return { key: "m" + idx, ...parseModelElement(el) };
 }
@@ -44,7 +45,7 @@ export function snapshot(): Turn[] {
     const t = parseTurn(el, i, uIdx);
     const old = cache.get(i);
     // turn lazy chưa render (rỗng) không được ghi đè bản đã có
-    if (t.role === "model" && t.empty && old && old.role === "model" && !old.empty) return;
+    if (t.empty && old && !old.empty) return;
     sigs.set(i, sig);
     if (old && JSON.stringify(old) === JSON.stringify(t)) return;
     cache.set(i, t);

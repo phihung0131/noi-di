@@ -48,6 +48,8 @@ export interface UserTurn {
   text: string;
   audio: boolean;
   hidden: boolean;
+  /** turn lazy chưa render nội dung */
+  empty: boolean;
 }
 
 export type Turn = ModelTurn | UserTurn;

@@ -26,12 +26,13 @@ export function Feed() {
   }, [turns, generating]);
 
   const lastModel = turns.map((t) => t.role).lastIndexOf("model");
-  const visible = turns.filter((t, i) => !(t.role === "user" && t.hidden) && !(t.role === "model" && t.empty && !(generating && i === turns.length - 1)));
+  const visible = turns.filter((t, i) => !(t.role === "user" && (t.hidden || t.empty)) && !(t.role === "model" && t.empty && !(generating && i === turns.length - 1)));
 
   return (
     <div ref={scroller} onScroll={onScroll} className="absolute inset-0 overflow-y-auto px-4 pb-32 pt-6">
       <div className="mx-auto flex max-w-[720px] flex-col gap-5">
         {hydrating && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" />Đang nạp lịch sử cuộc trò chuyện…</p>}
+        {!turns.length && locked && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" />Đang tải cuộc trò chuyện…</p>}
         {!turns.length && !locked && (
           <div className="mx-auto mt-16 max-w-sm text-center">
             <div className="mx-auto mb-5 w-fit"><Logo size={64} /></div>

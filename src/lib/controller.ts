@@ -189,7 +189,7 @@ function tick() {
   if (id && bindConfig) { void storage.setSession(id, bindConfig); bindConfig = null; }
 
   // nạp các lượt lazy chưa render
-  const lazy = turns.some((t, i) => t.role === "model" && t.empty && !(gen && i === turns.length - 1));
+  const lazy = turns.some((t, i) => t.empty && !(gen && i === turns.length - 1) && !(t.role === "model" && i > 0 && turns[i - 1].role === "model"));
   const hk = `${id}:${turns.length}`;
   if (lazy && !gen && hk !== hydrateKey && !isHydrating()) { hydrateKey = hk; void hydrate(() => tick()); }
 

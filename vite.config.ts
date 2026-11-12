@@ -5,7 +5,7 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
-  define: { "process.env.NODE_ENV": JSON.stringify("production") },
+  define: { "process.env.NODE_ENV": JSON.stringify("production"), __BUILD__: JSON.stringify(new Date().toISOString()) },
   build: {
     outDir: "dist",
     emptyOutDir: true,

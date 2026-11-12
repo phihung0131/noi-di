@@ -3,6 +3,7 @@ import { App } from "@/components/App";
 import { boot } from "@/lib/controller";
 import css from "@/styles.css?inline";
 
+declare const __BUILD__: string;
 declare global { interface Window { __noidiLoaded?: boolean } }
 
 /** @font-face không hoạt động trong shadow DOM, phải khai báo ở document. */
@@ -25,6 +26,7 @@ if (!window.__noidiLoaded) {
   injectFonts();
   const host = document.createElement("div");
   host.id = "noidi-host";
+  host.dataset.build = __BUILD__;
   document.body.appendChild(host);
   const shadow = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
