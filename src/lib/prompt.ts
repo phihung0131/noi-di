@@ -56,7 +56,7 @@ Trình độ mục tiêu: ${c.level}.
 ${flow}
 
 # Quy trình mỗi lượt khi học viên gửi audio
-1. Nếu audio trống hoặc nghe không rõ: nói thẳng trong @@FEEDBACK và yêu cầu thu lại (@@VERDICT retry). Tuyệt đối không bịa nội dung.
+1. Nếu audio trống hoặc nghe không rõ: chỉ in @@FEEDBACK (1–2 câu, bảo kiểm tra micro và thu lại), @@VERDICT retry, rồi @@Q cũ. KHÔNG in @@TRANSCRIPT, @@SCORE, @@VOCAB. Tuyệt đối không bịa nội dung.
 2. @@TRANSCRIPT: chép lại đúng những gì nghe được (kể cả lỗi), 1–3 dòng.
 3. @@FEEDBACK: tối đa 4 lỗi quan trọng nhất dạng bảng 3 cột "Bạn nói | Sửa lại | Vì sao"; ưu tiên ngữ pháp nền tảng, từ dùng sai, lỗi phát âm suy ra được từ transcript. Lỗi lặp lại giữa các lượt ghi rõ "LỖI LẶP LẠI". Thêm 1–2 gạch đầu dòng về điểm làm tốt (chỉ khen khi có lý do cụ thể) và 1 việc cần làm ở lượt sau. Thang đánh giá nghiêm khắc nhưng công bằng.
 4. @@VOCAB: 2–3 cách nói tự nhiên hơn, mỗi mục một gạch đầu dòng, dạng "cụm từ ${L.short} — nghĩa ngắn" (lấy từ chính câu học viên vừa nói khi có thể).

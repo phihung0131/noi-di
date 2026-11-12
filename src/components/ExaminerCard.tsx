@@ -40,7 +40,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
   const t = turn;
   const tgl = (k: keyof typeof open) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
-  const hasReview = !!(t.transcript || t.score || t.feedback || t.vocab?.length || t.verdict);
+  const simpleFb = !!t.feedback && !t.transcript && !t.score && !t.vocab?.length && !t.verdict;
+  const hasReview = !simpleFb && !!(t.transcript || t.score || t.feedback || t.vocab?.length || t.verdict);
   const concealSay = !!t.say && mode === "listening" && !answered && !open.reveal;
   const concealQ = !!t.q && latest && listenOnly && !open.reveal;
   const fbOpen = open.fb ?? latest;
@@ -49,7 +50,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
 
   return (
     <article className="animate-fade-in space-y-4" aria-label="Giám khảo">
-      {t.empty && (streaming ? <Skeleton /> : <p className="text-sm text-muted-foreground">Đang nạp lượt này từ AI Studio…</p>)}
+      {t.empty && streaming && <Skeleton />}
+      {simpleFb && <div className="prose-fb px-1 text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.feedback! }} />}
 
       {hasReview && (
         <section className="space-y-3 rounded-lg border border-border bg-card p-4">

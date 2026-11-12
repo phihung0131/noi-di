@@ -12,5 +12,5 @@ export function Toast() {
     return () => window.clearTimeout(id);
   }, [t]);
   if (!shown) return null;
-  return <div role="status" aria-live="polite" className="absolute bottom-24 left-1/2 z-30 max-w-[min(90vw,480px)] -translate-x-1/2 animate-fade-in rounded-lg bg-foreground px-4 py-2.5 text-sm text-background shadow-lg">{shown}</div>;
+  return <div role="status" aria-live="polite" className="absolute bottom-24 left-1/2 z-30 max-w-[min(90vw,480px)] -translate-x-1/2 animate-fade rounded-lg bg-foreground px-4 py-2.5 text-sm text-background shadow-lg">{shown}</div>;
 }

@@ -26,7 +26,7 @@ export function Feed() {
   }, [turns, generating]);
 
   const lastModel = turns.map((t) => t.role).lastIndexOf("model");
-  const visible = turns.filter((t) => !(t.role === "user" && t.hidden));
+  const visible = turns.filter((t, i) => !(t.role === "user" && t.hidden) && !(t.role === "model" && t.empty && !(generating && i === turns.length - 1)));
 
   return (
     <div ref={scroller} onScroll={onScroll} className="absolute inset-0 overflow-y-auto px-4 pb-32 pt-6">

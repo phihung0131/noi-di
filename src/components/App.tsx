@@ -30,7 +30,7 @@ export function App() {
   const dark = theme === "dark" || (theme === "auto" && sysDark);
 
   return (
-    <div ref={setPortal} className={cn("noidi", dark && "dark")}>
+    <div className={cn("noidi", dark && "dark")}>
       <QueryClientProvider client={qc}>
         <PortalCtx.Provider value={portal}>
           <TooltipProvider>
@@ -48,6 +48,8 @@ export function App() {
               </div>
             )}
           </TooltipProvider>
+          {/* Radix portal: luôn nằm trên khung chính */}
+          <div ref={setPortal} className="pointer-events-none fixed inset-0 z-[2147483000] [&>*]:pointer-events-auto" />
         </PortalCtx.Provider>
       </QueryClientProvider>
     </div>
