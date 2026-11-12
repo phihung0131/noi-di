@@ -46,9 +46,10 @@ function PhraseList({ title, items, idp, lang }: { title: string; items: string[
   );
 }
 
-const Skeleton = () => (
-  <div className="flex items-center gap-1.5 py-1" aria-label="Giám khảo đang soạn câu trả lời">
+const Skeleton = ({ label }: { label?: string }) => (
+  <div className="flex items-center gap-1.5 py-1" aria-label={label ?? "Giám khảo đang soạn câu trả lời"}>
     {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 animate-dot rounded-full bg-muted-foreground" style={{ animationDelay: `${i * 0.18}s` }} />)}
+    {label && <span className="ml-1 text-xs text-muted-foreground">{label}…</span>}
   </div>
 );
 
@@ -59,6 +60,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
   const lang = useLang();
   const [open, setOpen] = useState<{ tr?: boolean; hint?: boolean; sample?: boolean; fb?: boolean; reveal?: boolean }>({});
   const t = turn;
+  // Mục model đang viết dở (bảng, điểm, danh sách) chưa hiện, chờ đóng mục để khỏi nhấp nháy.
+  const pending = (name: string) => streaming && t.open === name;
   const tgl = (k: keyof typeof open) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
   const simpleFb = !!t.feedback && !t.transcript && !t.score && !t.vocab?.length && !t.pron?.length && !t.verdict;
@@ -72,7 +75,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
   return (
     <article className="animate-fade-in space-y-4" aria-label="Giám khảo">
       {t.empty && streaming && <Skeleton />}
-      {simpleFb && <div className="prose-fb px-1 text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.feedback! }} />}
+      {simpleFb && !pending("FEEDBACK") && <div className="prose-fb px-1 text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.feedback! }} />}
 
       {hasReview && (
         <section className="space-y-3 rounded-lg border border-border bg-card p-4">
@@ -89,8 +92,10 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
               “{t.transcript}”
             </blockquote>
           )}
-          {t.score && <Score items={t.score} />}
-          {t.feedback && (
+          {t.score && !pending("SCORE") && <Score items={t.score} />}
+          {pending("SCORE") && <Skeleton label="Đang chấm điểm" />}
+          {pending("FEEDBACK") && <Skeleton label="Đang soạn nhận xét" />}
+          {t.feedback && !pending("FEEDBACK") && (
             <div>
               <button className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => tgl("fb")} aria-expanded={fbOpen}>
                 <span>Chi tiết lỗi và gợi ý</span><ChevronDown size={16} className={cn("transition-transform", fbOpen && "rotate-180")} />
@@ -98,8 +103,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
               <Fold open={fbOpen}><div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.feedback }} /></Fold>
             </div>
           )}
-          {!!t.pron?.length && <PhraseList title="Phát âm cần sửa" items={t.pron} idp={audioId("pron")} lang={lang} />}
-          {!!t.vocab?.length && <PhraseList title="Nói tự nhiên hơn" items={t.vocab} idp={audioId("vocab")} lang={lang} />}
+          {!!t.pron?.length && !pending("PRON") && <PhraseList title="Phát âm cần sửa" items={t.pron} idp={audioId("pron")} lang={lang} />}
+          {!!t.vocab?.length && !pending("VOCAB") && <PhraseList title="Nói tự nhiên hơn" items={t.vocab} idp={audioId("vocab")} lang={lang} />}
         </section>
       )}
 
@@ -109,7 +114,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
           {concealSay ? (
             <p className="font-serif text-lg text-muted-foreground">Nghe kỹ, chữ sẽ hiện sau khi bạn trả lời.</p>
           ) : (
-            <Words id={audioId("say")} text={t.say} className="font-serif text-xl leading-relaxed" />
+            <Words id={audioId("say")} fade={streaming} text={t.say} className="font-serif text-xl leading-relaxed" />
           )}
           <div className="mt-3 flex flex-wrap gap-2">
             <SpeakBtn id={audioId("say")} text={t.say} />
@@ -125,7 +130,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             {t.q.n && <span className="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">Câu {t.q.n}</span>}
           </div>
           <div className={cn(concealQ && "select-none blur-md")} onClick={concealQ ? () => tgl("reveal") : undefined} aria-hidden={concealQ}>
-            <Words id={audioId("q")} text={t.q.text} className="font-serif text-[26px] font-medium leading-snug tracking-[-0.005em]" />
+            <Words id={audioId("q")} fade={streaming} text={t.q.text} className="font-serif text-[26px] font-medium leading-snug tracking-[-0.005em]" />
           </div>
           {concealQ && <p className="mt-2 text-xs text-muted-foreground">Chế độ nghe: bấm vào chữ để xem câu hỏi.</p>}
           {t.roman && <p className="mt-1 text-sm text-muted-foreground">{t.roman}</p>}
@@ -133,8 +138,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             <SpeakBtn id={audioId("q")} text={t.q.text} />
             <SpeakBtn id={audioId("q")} text={t.q.text} slow />
             {t.tr && <Button variant={trOpen ? "default" : "ghost"} size="sm" onClick={() => tgl("tr")} aria-pressed={trOpen}><Languages size={16} />Dịch</Button>}
-            {t.hint && <Button variant={open.hint ? "default" : "ghost"} size="sm" onClick={() => tgl("hint")} aria-pressed={!!open.hint}><Lightbulb size={16} />Gợi ý</Button>}
-            {t.sample && <Button variant={open.sample ? "default" : "ghost"} size="sm" onClick={() => tgl("sample")} aria-pressed={!!open.sample}><MessageSquareQuote size={16} />Câu mẫu</Button>}
+            {t.hint && !pending("HINT") && <Button variant={open.hint ? "default" : "ghost"} size="sm" onClick={() => tgl("hint")} aria-pressed={!!open.hint}><Lightbulb size={16} />Gợi ý</Button>}
+            {t.sample && !pending("SAMPLE") && !pending("SAMPLETR") && <Button variant={open.sample ? "default" : "ghost"} size="sm" onClick={() => tgl("sample")} aria-pressed={!!open.sample}><MessageSquareQuote size={16} />Câu mẫu</Button>}
             {t.prep && latest && <Prep seconds={t.prep} />}
             {latest && !streaming && <Button variant="ghost" size="sm" className="ml-auto" onClick={() => void skipQuestion()}><RefreshCw size={16} />Câu khác</Button>}
           </div>

@@ -85,6 +85,7 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
 
   const get = (n: string) => secs.filter((s) => s.name === n).pop();
   const out: Omit<ModelTurn, "key"> = { role: "model", empty: !anyText };
+  if (secs.length) out.open = secs[secs.length - 1].name;
   const q = get("Q");
   if (q) out.q = { n: q.args.replace(/\D/g, ""), text: unquote(oneLine(q.paras).replace(/^\s*Q\s*\d+\s*[:：.)]\s*/i, "")) };
   const say = get("SAY"); if (say) out.say = oneLine(say.paras);

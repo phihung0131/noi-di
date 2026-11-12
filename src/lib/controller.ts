@@ -5,7 +5,7 @@ import { mic } from "./recorder";
 import { speak, speechStore, stopSpeaking } from "./speech";
 import { DEFAULT_PREFS, storage } from "./storage";
 import type { ModelTurn, Prefs, RecState, SessionConfig, Turn } from "./types";
-import { sleep } from "./utils";
+import { sleep, waitFor } from "./utils";
 
 export interface SentRec { url: string; ms: number; peaks: number[] }
 export interface AppState {
@@ -90,10 +90,23 @@ async function guarded(fn: () => Promise<void>, fallback: RecState = "idle") {
   finally { busy = false; }
 }
 
+const MIC_BLOCKED = "Chưa có quyền dùng micro. Bấm biểu tượng ổ khoá cạnh thanh địa chỉ → Micro → Cho phép, rồi tải lại trang.";
+async function micPermission(): Promise<PermissionState> {
+  try { return (await navigator.permissions.query({ name: "microphone" as PermissionName })).state; } catch { return "prompt"; }
+}
+
 async function beginNative() {
+  const perm = await micPermission();
+  if (perm === "denied") throw new Error(MIC_BLOCKED);
   setRec({ state: "starting" });
   mic.begin();
   await native.start();
+  // "Stop recording" hiện ra chưa chắc là micro đã chạy (bị chặn quyền thì hộp thoại gốc quay lại "Start recording").
+  // Chờ luồng micro thật sự mở: tối đa 30s khi Chrome đang hỏi quyền, 3s khi đã cấp quyền.
+  const limit = perm === "granted" ? 3000 : 30000;
+  await waitFor(() => mic.tapped || !native.hasStop(), limit, 100);
+  if (!native.hasStop()) throw new Error(MIC_BLOCKED);
+  if (!mic.tapped && perm !== "granted") throw new Error(MIC_BLOCKED);
   setRec({ state: "recording", startedAt: Date.now(), ms: 0, peaks: [] });
 }
 export const startRecording = () => guarded(async () => {

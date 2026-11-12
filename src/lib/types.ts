@@ -37,6 +37,8 @@ export interface ModelTurn {
   pron?: string[];
   verdict?: "pass" | "retry";
   prep?: number;
+  /** Tên mục (marker) đang được model viết dở; undefined khi đã xong */
+  open?: string;
   /** true khi chưa có nội dung nào (turn lazy chưa render hoặc đang chờ model) */
   empty: boolean;
 }

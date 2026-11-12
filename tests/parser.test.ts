@@ -46,6 +46,11 @@ describe("parseModelElement", () => {
     expect(t.sample).toBeUndefined();
   });
 
+  it("open = mục đang viết dở", () => {
+    expect(parseModelElement(el(`<p>@@TRANSCRIPT</p><p>hi</p><p>@@FEEDBACK</p><p>Bạn nói | Sửa</p>`)).open).toBe("FEEDBACK");
+    expect(parseModelElement(el(`<p>@@Q 1</p><p>Where do</p><p>@@SAM</p>`)).open).toBe("Q");
+  });
+
   it("turn lazy chưa render => empty", () => {
     expect(parseModelElement(el(``)).empty).toBe(true);
   });

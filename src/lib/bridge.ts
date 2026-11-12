@@ -22,6 +22,7 @@ const runButton = () => {
 /* ---------- đọc hội thoại (có cache vì AI Studio chỉ render turn đang hiện trên màn hình) ---------- */
 const cache = new Map<number, Turn>();
 const sigs = new Map<number, string>();
+let wasGen = false;
 let domChangedAt = Date.now();
 /** Lần cuối nội dung chat gốc thay đổi (kể cả phần "thinking" không hiển thị). */
 export const lastDomActivity = () => domChangedAt;
@@ -37,8 +38,26 @@ function parseTurn(el: Element, idx: number, userIdx: number): Turn {
 }
 
 /** Quét DOM hiện có, trả danh sách turn đầy đủ nhất (kết hợp cache). */
+/** Khi đang stream, không cho trường đã có biến mất hoặc ngắn lại (AI Studio thỉnh thoảng render lại tạm thời). */
+function mergeStreaming(old: Turn, nu: Turn): Turn {
+  if (old.role !== "model" || nu.role !== "model" || old.empty) return nu;
+  const out: Record<string, unknown> = { ...nu };
+  for (const k of Object.keys(old) as (keyof typeof old)[]) {
+    if (k === "open" || k === "key") continue;
+    if (out[k] === undefined && old[k] !== undefined) out[k] = old[k];
+  }
+  if (old.q && nu.q && old.q.text.length > nu.q.text.length && old.q.text.startsWith(nu.q.text)) out.q = old.q;
+  if (old.say && nu.say && old.say.length > nu.say.length && old.say.startsWith(nu.say)) out.say = old.say;
+  out.empty = false;
+  return out as unknown as Turn;
+}
+
 export function snapshot(): Turn[] {
   const els = $$(".chat-turn-container");
+  const gen = isGenerating();
+  // Vừa hết stream: parse lại lần cuối, không merge, để lấy bản chuẩn.
+  if (wasGen && !gen) for (let k = Math.max(0, els.length - 2); k < els.length; k++) sigs.delete(k);
+  wasGen = gen;
   let userIdx = 0;
   els.forEach((el, i) => {
     const isUser = !el.classList.contains("model");
@@ -46,8 +65,9 @@ export function snapshot(): Turn[] {
     const uIdx = isUser ? userIdx++ : -1;
     if (sigs.get(i) === sig && cache.has(i)) return;
     domChangedAt = Date.now();
-    const t = parseTurn(el, i, uIdx);
+    let t = parseTurn(el, i, uIdx);
     const old = cache.get(i);
+    if (gen && old) t = mergeStreaming(old, t);
     // turn lazy chưa render (rỗng) không được ghi đè bản đã có
     if (t.empty && old && !old.empty) return;
     sigs.set(i, sig);
@@ -119,6 +139,7 @@ export const native = {
   redo() { dlgBtn(/re-record/i)?.click(); },
   async cancel() { dlgBtn(/^\s*close\s*$/i)?.click(); await waitFor(() => !dlg(), 3000); },
   isOpen: () => !!dlg(),
+  hasStop: () => !!dlgBtn(/stop recording/i),
   /** Nhãn các nút trong hộp thoại ghi âm (để gỡ lỗi khi UI gốc đổi). */
   debugButtons: () => $$<HTMLButtonElement>("ms-mic-audio-dialog button").map((b) => (b.innerText + "|" + (b.getAttribute("aria-label") ?? "")).replace(/\s+/g, " ").trim()),
   /** Gửi bản ghi; trả về chỉ số lượt user mới (để gắn bản nghe lại). */
