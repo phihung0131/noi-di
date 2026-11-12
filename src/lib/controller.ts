@@ -86,13 +86,14 @@ const setRec = (p: Partial<AppState["rec"]>) => set({ rec: { ...get().rec, ...p 
 async function guarded(fn: () => Promise<void>, fallback: RecState = "idle") {
   if (busy) return;
   busy = true;
-  try { await fn(); } catch (e) { toast((e as Error).message || String(e)); mic.abort(); setRec({ state: get().rec.state === "recorded" ? "recorded" : fallback }); }
+  try { await fn(); } catch (e) { toast((e as Error).message || String(e)); mic.abort(); const next = get().rec.state === "recorded" ? "recorded" : fallback; setRec({ state: next }); if (next === "idle" && native.isOpen()) void native.cancel(); }
   finally { busy = false; }
 }
 
 async function beginNative() {
   setRec({ state: "starting" });
-  await native.start(() => mic.start());
+  mic.begin();
+  await native.start();
   setRec({ state: "recording", startedAt: Date.now(), ms: 0, peaks: [] });
 }
 export const startRecording = () => guarded(async () => {
@@ -103,21 +104,31 @@ export const startRecording = () => guarded(async () => {
 export const stopRecording = () => guarded(async () => {
   const ms = Date.now() - get().rec.startedAt;
   setRec({ state: "stopping" });
-  await native.stop();
-  const blob = await mic.stop();
-  const prev = get().rec.url; if (prev) URL.revokeObjectURL(prev);
-  setRec({ state: "recorded", ms, url: blob ? URL.createObjectURL(blob) : null, peaks: [...mic.peaks] });
-}, "recorded");
+  try {
+    await native.stop();
+  } catch (e) {
+    // Dừng thất bại: dọn sạch để không kẹt ở trạng thái "đã ghi" mà không có bản ghi.
+    console.warn("[noidi] native stop failed", (e as Error).message, native.debugButtons());
+    mic.abort();
+    await native.cancel();
+    setRec({ state: "idle", url: null, ms: 0, peaks: [] });
+    throw new Error("Không dừng được bản ghi của AI Studio. Hãy thử ghi lại; nếu vẫn lỗi, kiểm tra micro và quyền micro của Chrome.");
+  }
+  const prev = get().rec.url; if (prev) { try { URL.revokeObjectURL(prev); } catch { /* */ } }
+  const r = await mic.stop();
+  setRec({ state: "recorded", ms: r?.ms || ms, url: r?.url ?? null, peaks: [...mic.peaks] });
+  if (!r?.url) toast("Đã ghi xong nhưng chưa nghe lại được bản ghi này. Bạn vẫn có thể gửi.");
+}, "idle");
 export const redoRecording = () => guarded(async () => {
   stopPlayback();
-  const prev = get().rec.url; if (prev) URL.revokeObjectURL(prev);
+  const prev = get().rec.url; if (prev) { try { URL.revokeObjectURL(prev); } catch { /* */ } }
   setRec({ url: null, peaks: [] });
   native.redo();
   await beginNative();
 });
 export const cancelRecording = () => guarded(async () => {
   stopPlayback(); mic.abort();
-  const prev = get().rec.url; if (prev) URL.revokeObjectURL(prev);
+  const prev = get().rec.url; if (prev) { try { URL.revokeObjectURL(prev); } catch { /* */ } }
   await native.cancel();
   setRec({ state: "idle", url: null, ms: 0, peaks: [] });
 });

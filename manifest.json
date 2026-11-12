@@ -4,12 +4,45 @@
   "short_name": "Nói Đi",
   "version": "2.0.0",
   "description": "Biến Google AI Studio thành phòng luyện nói: giám khảo AI, ghi âm có sóng, nghe lại, câu mẫu, chấm band, sổ từ vựng.",
-  "permissions": ["storage"],
-  "icons": { "16": "dist/icons/icon-16.png", "32": "dist/icons/icon-32.png", "48": "dist/icons/icon-48.png", "128": "dist/icons/icon-128.png" },
+  "permissions": [
+    "storage"
+  ],
+  "icons": {
+    "16": "dist/icons/icon-16.png",
+    "32": "dist/icons/icon-32.png",
+    "48": "dist/icons/icon-48.png",
+    "128": "dist/icons/icon-128.png"
+  },
   "content_scripts": [
-    { "matches": ["https://aistudio.google.com/*"], "js": ["dist/content.js"], "run_at": "document_idle" }
+    {
+      "matches": [
+        "https://aistudio.google.com/*"
+      ],
+      "js": [
+        "dist/tap.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://aistudio.google.com/*"
+      ],
+      "js": [
+        "dist/content.js"
+      ],
+      "run_at": "document_idle"
+    }
   ],
   "web_accessible_resources": [
-    { "resources": ["dist/fonts/*", "dist/icons/*"], "matches": ["https://aistudio.google.com/*"] }
+    {
+      "resources": [
+        "dist/fonts/*",
+        "dist/icons/*"
+      ],
+      "matches": [
+        "https://aistudio.google.com/*"
+      ]
+    }
   ]
 }

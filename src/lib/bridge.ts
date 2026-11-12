@@ -103,22 +103,24 @@ export const native = {
     item.click();
     if (!(await waitFor(dlg))) throw new Error("Hộp thoại ghi âm không mở.");
   },
-  async start(beforeStart?: () => Promise<void>) {
+  async start() {
     const start = await waitFor(() => dlgBtn(/start recording/i));
     if (!start) throw new Error("Không thấy nút Start recording.");
-    await beforeStart?.();
     start.click();
-    if (!(await waitFor(() => dlgBtn(/stop recording/i), 6000))) throw new Error("Không bắt đầu ghi được. Kiểm tra quyền micro của Chrome.");
+    // Lần đầu Chrome hỏi quyền micro: chờ người dùng bấm Cho phép (tối đa 30s).
+    if (!(await waitFor(() => dlgBtn(/stop recording/i), 30000))) throw new Error("Không bắt đầu ghi được. Hãy cho phép micro trong Chrome (biểu tượng khoá cạnh thanh địa chỉ) rồi thử lại.");
   },
   async stop() {
     const b = dlgBtn(/stop recording/i);
     if (!b) throw new Error("Không đang ghi âm.");
     b.click();
-    if (!(await waitFor(() => dlgBtn(/add to prompt/i), 6000))) throw new Error("Không dừng được bản ghi.");
+    if (!(await waitFor(() => dlgBtn(/add to prompt/i), 15000))) throw new Error("Không dừng được bản ghi.");
   },
   redo() { dlgBtn(/re-record/i)?.click(); },
   async cancel() { dlgBtn(/^\s*close\s*$/i)?.click(); await waitFor(() => !dlg(), 3000); },
   isOpen: () => !!dlg(),
+  /** Nhãn các nút trong hộp thoại ghi âm (để gỡ lỗi khi UI gốc đổi). */
+  debugButtons: () => $$<HTMLButtonElement>("ms-mic-audio-dialog button").map((b) => (b.innerText + "|" + (b.getAttribute("aria-label") ?? "")).replace(/\s+/g, " ").trim()),
   /** Gửi bản ghi; trả về chỉ số lượt user mới (để gắn bản nghe lại). */
   async send(): Promise<number> {
     const add = dlgBtn(/add to prompt/i);
