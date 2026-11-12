@@ -1,4 +1,7 @@
+import { SEL } from "./selectors";
 import type { ModelTurn, ScoreItem } from "./types";
+
+const THOUGHT = SEL.thought.join(", ");
 
 /* ---------- làm sạch HTML của AI Studio -> HTML tối giản, an toàn ---------- */
 const ALLOWED = new Set(["P", "UL", "OL", "LI", "STRONG", "EM", "B", "I", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "BR", "CODE", "BLOCKQUOTE", "H1", "H2", "H3", "H4", "H5"]);
@@ -28,7 +31,7 @@ const textOf = (el: Element): string => {
 /** Các khối cấp cao nhất của một turn (bỏ phần "thinking"). */
 export function topBlocks(turn: Element): Element[] {
   const all = Array.from(turn.querySelectorAll("p, blockquote, table, ul, ol, h1, h2, h3, h4, h5"));
-  return all.filter((el) => !el.closest("ms-thought-chunk") && !el.parentElement?.closest("blockquote, table, ul, ol, p, li"));
+  return all.filter((el) => !el.closest(THOUGHT) && !el.parentElement?.closest("blockquote, table, ul, ol, p, li"));
 }
 
 interface Section { name: string; args: string; paras: string[]; html: string[] }

@@ -1,7 +1,8 @@
 import { useStore } from "@tanstack/react-store";
-import { ChevronDown, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
+import { AlertTriangle, ChevronDown, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
-import { appStore, skipQuestion } from "@/lib/controller";
+import { appStore, retryReply, skipQuestion, switchModelAndRetry } from "@/lib/controller";
+import { classifyError } from "@/lib/errors";
 import { speakable } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
 import { cn, fmtTime } from "@/lib/utils";
@@ -46,6 +47,33 @@ function PhraseList({ title, items, idp, lang }: { title: string; items: string[
   );
 }
 
+function ErrorCard({ message, latest }: { message: string; latest: boolean }) {
+  const kind = classifyError(message);
+  const title = kind === "limit" ? "Model đã chạm giới hạn sử dụng" : kind === "blocked" ? "Nội dung bị AI Studio chặn" : "AI Studio báo lỗi";
+  const help = kind === "limit"
+    ? "Chuyển sang model nhẹ hơn (ví dụ Gemini Flash Lite) thường còn hạn mức, hoặc đợi vài phút rồi thử lại."
+    : kind === "blocked" ? "Thử nói lại bằng cách diễn đạt khác, hoặc bấm “Câu khác”."
+    : "Bạn có thể thử lại. Nếu lỗi lặp lại, mở AI Studio để xem chi tiết.";
+  return (
+    <section role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+      <div className="flex items-start gap-3">
+        <AlertTriangle size={18} className="mt-0.5 shrink-0 text-destructive" />
+        <div className="min-w-0 flex-1 space-y-1">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <p className="text-sm text-muted-foreground">{help}</p>
+          <p className="break-words rounded-md bg-card/60 px-2 py-1 font-mono text-xs text-muted-foreground">{message}</p>
+        </div>
+      </div>
+      {latest && (
+        <div className="mt-3 flex flex-wrap justify-end gap-2">
+          {kind === "limit" && <Button size="sm" onClick={() => void switchModelAndRetry()}>Chuyển sang model nhẹ hơn</Button>}
+          <Button size="sm" variant="outline" onClick={() => void retryReply()}>Thử lại</Button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 const Skeleton = ({ label }: { label?: string }) => (
   <div className="flex items-center gap-1.5 py-1" aria-label={label ?? "Giám khảo đang soạn câu trả lời"}>
     {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 animate-dot rounded-full bg-muted-foreground" style={{ animationDelay: `${i * 0.18}s` }} />)}
@@ -74,6 +102,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
 
   return (
     <article className="animate-fade-in space-y-4" aria-label="Giám khảo">
+      {t.error && <ErrorCard message={t.error} latest={latest} />}
       {t.empty && streaming && <Skeleton />}
       {simpleFb && !pending("FEEDBACK") && <div className="prose-fb px-1 text-muted-foreground" dangerouslySetInnerHTML={{ __html: t.feedback! }} />}
 

@@ -15,6 +15,8 @@ describe("isStalledState", () => {
     expect(isStalledState([u("hi"), m({ transcript: "hi", score: [{ key: "NATIVE", value: "50" }], verdict: "pass", q: { n: "2", text: "q" } })], false)).toBe(false));
   it("không báo khi chỉ có nhận xét ngắn (retry ngầm, câu hỏi cũ vẫn ở trên)", () =>
     expect(isStalledState([u("asdf"), m({ feedback: "<p>không nhận ra</p>" })], false)).toBe(false));
+  it("không báo khi lượt model có lỗi riêng (đã hiện thẻ lỗi)", () =>
+    expect(isStalledState([u("hi"), m({ error: "rate limit" })], false)).toBe(false));
   it("không báo với bản tổng kết", () =>
     expect(isStalledState([u("Tổng kết buổi"), m({ score: [{ key: "NATIVE", value: "60" }], feedback: "<p>x</p>" })], false)).toBe(false));
 });

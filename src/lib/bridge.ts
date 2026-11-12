@@ -1,23 +1,29 @@
 import { parseModelElement } from "./parser";
+import { pickLighter } from "./errors";
 import { buildPrompt } from "./prompt";
 import type { SessionConfig, Turn } from "./types";
+import { byLabel, first, all, LABEL, SEL } from "./selectors";
 import { sleep, waitFor } from "./utils";
 
 /* Mọi thứ chạm vào DOM của AI Studio nằm ở đây. */
-const $ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => r.querySelector<T>(s);
-const $$ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => Array.from(r.querySelectorAll<T>(s));
+const CLICKABLE_ALL = "button, [role=button], [role=option], [role=menuitem]";
 
 export const chatId = () => {
   const id = location.pathname.match(/^\/prompts\/([^/?#]+)/)?.[1];
   return id && id !== "new_chat" ? id : null;
 };
 export const isNewChatPage = () => location.pathname.startsWith("/prompts/new_chat");
-export const scroller = () => $("ms-autoscroll-container");
-export const isGenerating = () => /stop/i.test($("ms-run-button")?.textContent ?? "");
+export const scroller = () => first(SEL.scroller);
+const runWrap = () => first(SEL.runWrap);
+export const isGenerating = () => LABEL.stop.test(`${runWrap()?.textContent ?? ""} ${first(SEL.runBtn)?.getAttribute("aria-label") ?? ""}`);
 const runButton = () => {
-  const b = $<HTMLButtonElement>("ms-run-button button");
+  const b = first<HTMLButtonElement>(SEL.runBtn);
   return b && !b.disabled && b.getAttribute("aria-disabled") !== "true" ? b : null;
 };
+const turnEls = () => all(SEL.turn);
+/** Lượt của model hay của người dùng: dò theo class/ cấu trúc, có dự phòng. */
+const isModelTurn = (el: Element) =>
+  /\bmodel\b|model-/i.test(el.className?.toString() ?? "") || !!el.querySelector("[class*='model-prompt' i], [class*='model-turn' i]");
 
 /* ---------- đọc hội thoại (có cache vì AI Studio chỉ render turn đang hiện trên màn hình) ---------- */
 const cache = new Map<number, Turn>();
@@ -28,13 +34,28 @@ let domChangedAt = Date.now();
 export const lastDomActivity = () => domChangedAt;
 export const resetChatCache = () => { cache.clear(); sigs.clear(); domChangedAt = Date.now(); };
 
+/** Lỗi AI Studio in trong lượt: phần tử "giống lỗi" nhỏ nhất, không chứa nội dung trả lời. */
+function findError(turn: Element): string | undefined {
+  const cands: Element[] = [];
+  for (const c of SEL.errorLike) { try { cands.push(...turn.querySelectorAll(c)); } catch { /* */ } }
+  const small = cands
+    .filter((e) => !e.closest("[data-noidi]") && !first(SEL.thought, e.parentElement ?? turn)?.contains(e))
+    .map((e) => ({ e, t: (e.textContent ?? "").replace(/\s+/g, " ").trim() }))
+    .filter((x) => x.t.length > 0 && x.t.length < 400 && !x.e.querySelector("p, table, ul, ol, blockquote"))
+    .sort((a, b) => a.t.length - b.t.length)[0];
+  if (!small) return undefined;
+  return small.t.replace(/^\s*(error|warning|lỗi)\s*[:\-]?\s*/i, "").trim() || "Lỗi không rõ từ AI Studio.";
+}
+
 function parseTurn(el: Element, idx: number, userIdx: number): Turn {
-  if (!el.classList.contains("model")) {
-    const text = (el.querySelector("ms-text-chunk")?.textContent ?? "").replace(/\s+/g, " ").trim();
-    const audio = !!el.querySelector("ms-audio-chunk, ms-prompt-audio");
+  if (!isModelTurn(el)) {
+    const text = (first(SEL.userText, el)?.textContent ?? "").replace(/\s+/g, " ").trim();
+    const audio = !!first(SEL.audioMarker, el);
     return { role: "user", key: "u" + idx, idx: userIdx, text, audio, hidden: userIdx === 0 && /^(bắt đầu|start)$/i.test(text), empty: !text && !audio };
   }
-  return { key: "m" + idx, ...parseModelElement(el) };
+  const error = findError(el);
+  const parsed = parseModelElement(el);
+  return { key: "m" + idx, ...parsed, ...(error ? { error, empty: false } : {}) };
 }
 
 /** Quét DOM hiện có, trả danh sách turn đầy đủ nhất (kết hợp cache). */
@@ -53,15 +74,15 @@ function mergeStreaming(old: Turn, nu: Turn): Turn {
 }
 
 export function snapshot(): Turn[] {
-  const els = $$(".chat-turn-container");
+  const els = turnEls();
   const gen = isGenerating();
   // Vừa hết stream: parse lại lần cuối, không merge, để lấy bản chuẩn.
   if (wasGen && !gen) for (let k = Math.max(0, els.length - 2); k < els.length; k++) sigs.delete(k);
   wasGen = gen;
   let userIdx = 0;
   els.forEach((el, i) => {
-    const isUser = !el.classList.contains("model");
-    const sig = (isUser ? "u" : "m") + (el.textContent?.length ?? 0) + ":" + (el.querySelector("ms-audio-chunk") ? 1 : 0);
+    const isUser = !isModelTurn(el);
+    const sig = (isUser ? "u" : "m") + (el.textContent?.length ?? 0) + ":" + (first(SEL.audioMarker, el) ? 1 : 0);
     const uIdx = isUser ? userIdx++ : -1;
     if (sigs.get(i) === sig && cache.has(i)) return;
     domChangedAt = Date.now();
@@ -103,8 +124,12 @@ export async function hydrate(onProgress?: () => void): Promise<void> {
 export const isHydrating = () => hydrating;
 
 /* ---------- ghi âm bằng hộp thoại gốc ---------- */
-const dlg = () => $("ms-mic-audio-dialog");
-const dlgBtn = (re: RegExp) => $$<HTMLButtonElement>("ms-mic-audio-dialog button").find((b) => re.test(b.innerText + " " + (b.getAttribute("aria-label") ?? "")));
+/** Hộp thoại ghi âm: thẻ đã biết, hoặc bất kỳ hộp thoại nào đang có nút Start/Stop recording. */
+const dlg = (): HTMLElement | null =>
+  first(SEL.micDialog) ?? all(SEL.dialogs).find((d) => byLabel(LABEL.startRec, d) || byLabel(LABEL.stopRec, d) || byLabel(LABEL.addToPrompt, d)) ?? null;
+const dlgBtn = (re: RegExp) => { const d = dlg(); return d ? byLabel(re, d) : undefined; };
+
+const promptTa = () => first<HTMLTextAreaElement>(SEL.promptTextarea);
 
 function setNative(el: HTMLTextAreaElement, v: string) {
   Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(el, v);
@@ -115,43 +140,43 @@ function setNative(el: HTMLTextAreaElement, v: string) {
 export const native = {
   async open() {
     if (dlg()) return;
-    const add = $<HTMLButtonElement>("ms-add-media-button button");
-    if (!add) throw new Error("Không thấy nút thêm media của AI Studio.");
+    const add = first(SEL.addMedia) ?? byLabel(LABEL.addMedia, first(SEL.promptBox) ?? document);
+    if (!add) throw new Error("Không thấy nút thêm media của AI Studio (giao diện có thể đã đổi).");
     add.click();
-    const item = await waitFor(() => $$(".mat-mdc-menu-panel button, .mat-mdc-menu-panel [role=menuitem]").find((b) => /record audio/i.test(b.innerText)));
+    const item = await waitFor(() => byLabel(LABEL.recordAudio, first(SEL.overlay) ?? document));
     if (!item) throw new Error("Không thấy mục Record Audio.");
     item.click();
     if (!(await waitFor(dlg))) throw new Error("Hộp thoại ghi âm không mở.");
   },
   async start() {
-    const start = await waitFor(() => dlgBtn(/start recording/i));
+    const start = await waitFor(() => dlgBtn(LABEL.startRec));
     if (!start) throw new Error("Không thấy nút Start recording.");
     start.click();
     // Lần đầu Chrome hỏi quyền micro: chờ người dùng bấm Cho phép (tối đa 30s).
-    if (!(await waitFor(() => dlgBtn(/stop recording/i), 30000))) throw new Error("Không bắt đầu ghi được. Hãy cho phép micro trong Chrome (biểu tượng khoá cạnh thanh địa chỉ) rồi thử lại.");
+    if (!(await waitFor(() => dlgBtn(LABEL.stopRec), 30000))) throw new Error("Không bắt đầu ghi được. Hãy cho phép micro trong Chrome (biểu tượng khoá cạnh thanh địa chỉ) rồi thử lại.");
   },
   async stop() {
-    const b = dlgBtn(/stop recording/i);
+    const b = dlgBtn(LABEL.stopRec);
     if (!b) throw new Error("Không đang ghi âm.");
     b.click();
-    if (!(await waitFor(() => dlgBtn(/add to prompt/i), 15000))) throw new Error("Không dừng được bản ghi.");
+    if (!(await waitFor(() => dlgBtn(LABEL.addToPrompt), 15000))) throw new Error("Không dừng được bản ghi.");
   },
-  redo() { dlgBtn(/re-record/i)?.click(); },
-  async cancel() { dlgBtn(/^\s*close\s*$/i)?.click(); await waitFor(() => !dlg(), 3000); },
+  redo() { dlgBtn(LABEL.reRecord)?.click(); },
+  async cancel() { dlgBtn(LABEL.close)?.click(); await waitFor(() => !dlg(), 3000); },
   isOpen: () => !!dlg(),
-  hasStop: () => !!dlgBtn(/stop recording/i),
+  hasStop: () => !!dlgBtn(LABEL.stopRec),
   /** Nhãn các nút trong hộp thoại ghi âm (để gỡ lỗi khi UI gốc đổi). */
-  debugButtons: () => $$<HTMLButtonElement>("ms-mic-audio-dialog button").map((b) => (b.innerText + "|" + (b.getAttribute("aria-label") ?? "")).replace(/\s+/g, " ").trim()),
+  debugButtons: () => Array.from(dlg()?.querySelectorAll<HTMLElement>("button, [role=button]") ?? []).map((b) => (b.innerText + "|" + (b.getAttribute("aria-label") ?? "")).replace(/\s+/g, " ").trim()),
   /** Gửi bản ghi; trả về chỉ số lượt user mới (để gắn bản nghe lại). */
   async send(): Promise<number> {
-    const add = dlgBtn(/add to prompt/i);
+    const add = dlgBtn(LABEL.addToPrompt);
     if (!add) throw new Error("Chưa có bản ghi để gửi.");
-    const userCount = $$(".chat-turn-container:not(.model)").length;
+    const userCount = turnEls().filter((e) => !isModelTurn(e)).length;
     add.click();
-    if (!(await waitFor(() => !dlg() && $("ms-prompt-box ms-prompt-audio"), 8000))) throw new Error("Không đính kèm được audio.");
+    if (!(await waitFor(() => !dlg() && first(SEL.promptAudio), 8000))) throw new Error("Không đính kèm được audio.");
     let btn = await waitFor(runButton, 1500);
     if (!btn) {
-      const ta = $<HTMLTextAreaElement>("ms-prompt-box textarea");
+      const ta = promptTa();
       if (ta && !ta.value.trim()) setNative(ta, "(Câu trả lời của tôi nằm trong audio. / My answer is in the audio.)");
       btn = await waitFor(runButton, 4000);
     }
@@ -162,7 +187,7 @@ export const native = {
 };
 
 export async function sendText(text: string) {
-  const ta = await waitFor(() => $<HTMLTextAreaElement>("ms-prompt-box textarea"), 8000);
+  const ta = await waitFor(promptTa, 8000);
   if (!ta) throw new Error("Không thấy ô nhập chat.");
   setNative(ta, text);
   const btn = await waitFor(runButton, 5000);
@@ -171,11 +196,11 @@ export async function sendText(text: string) {
 }
 
 /* ---------- nạp prompt hệ thống ---------- */
-const sysTa = () => $<HTMLTextAreaElement>('textarea[aria-label="System instructions"]');
+const sysTa = () => first<HTMLTextAreaElement>(SEL.systemTextarea) ?? Array.from(document.querySelectorAll("textarea")).find((t) => LABEL.systemInstr.test(t.getAttribute("aria-label") ?? "")) ?? null;
 export async function applyPrompt(c: SessionConfig) {
   let ta = sysTa();
   if (!ta) {
-    const card = await waitFor(() => $<HTMLButtonElement>("button.system-instructions-card"), 15000);
+    const card = await waitFor(() => first<HTMLElement>(SEL.systemCard) ?? byLabel(LABEL.systemInstr), 15000);
     if (!card) throw new Error("Không thấy ô System instructions. Hãy mở panel Run settings một lần rồi thử lại.");
     card.click();
     ta = await waitFor(sysTa, 5000);
@@ -183,6 +208,51 @@ export async function applyPrompt(c: SessionConfig) {
   if (!ta) throw new Error("Không mở được ô System instructions.");
   setNative(ta, buildPrompt(c));
   await sleep(400);
-  $<HTMLButtonElement>('.ms-sliding-right-panel-dialog button[aria-label="Close panel"]')?.click();
+  // đóng panel cài đặt: nút đóng trong panel chứa ô system instructions
+  const panel = ta.closest("[class*='panel' i], [role=dialog]") ?? document;
+  byLabel(LABEL.closePanel, panel)?.click();
   await sleep(500);
+}
+
+/* ---------- đổi model ---------- */
+const MODEL_ID = /\b((?:gemini|gemma)-[a-z0-9.-]*[a-z0-9])\b/i;
+const modelCard = () => {
+  const root = first(SEL.modelSelector);
+  return root ? (root.querySelector<HTMLElement>("button") ?? null) : null;
+};
+export const currentModelId = () => (modelCard()?.textContent ?? "").match(MODEL_ID)?.[1] ?? "";
+const pressEscape = () => (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
+
+/** Mở bảng chọn model của AI Studio và chuyển sang model nhẹ hơn. Trả về id model mới. */
+export async function switchToLighterModel(): Promise<string> {
+  const card = modelCard();
+  if (!card) throw new Error("Không thấy ô chọn model của AI Studio. Hãy thoát Nói Đi, đổi model trong AI Studio rồi quay lại.");
+  const cur = currentModelId();
+  card.click();
+  // bất kỳ nút nào trong lớp phủ có chứa mã model (gemini-… / gemma-…)
+  const buttons = await waitFor(() => {
+    const l = Array.from((first(SEL.overlay) ?? document).querySelectorAll<HTMLElement>(CLICKABLE_ALL)).filter((b) => MODEL_ID.test(b.textContent ?? ""));
+    return l.length >= 2 ? l : null;
+  }, 6000);
+  if (!buttons) { pressEscape(); throw new Error("Không đọc được danh sách model. Hãy đổi model thủ công trong AI Studio."); }
+  const items = buttons.map((b) => ({ b, id: (b.textContent ?? "").match(MODEL_ID)?.[1] ?? "", paid: /paid|trả phí/i.test(b.textContent ?? "") }));
+  const pick = pickLighter(items, cur);
+  if (!pick) { pressEscape(); throw new Error("Không tìm thấy model nhẹ hơn miễn phí. Hãy chọn model thủ công trong AI Studio."); }
+  pick.b.click();
+  await waitFor(() => !all(SEL.dialogs).some((d) => MODEL_ID.test(d.textContent ?? "") && d.querySelectorAll("button").length > 5), 4000);
+  return pick.id;
+}
+
+/** Thông báo ngắn (snackbar) của AI Studio, nếu có. */
+export const snackbarText = () => (first(SEL.snackbar)?.textContent ?? "").replace(/\s+/g, " ").trim();
+
+/** Kiểm tra các điểm bám chính còn dò được không (gọi khi đang ở trang prompt). */
+export function health(): string[] {
+  if (!location.pathname.startsWith("/prompts/")) return [];
+  const missing: string[] = [];
+  if (!first(SEL.promptTextarea)) missing.push("ô nhập prompt");
+  if (!first(SEL.runBtn)) missing.push("nút Run");
+  if (!first(SEL.modelSelector)) missing.push("ô chọn model");
+  if (chatId() && !turnEls().length && !first(SEL.scroller)) missing.push("khung hội thoại");
+  return missing;
 }

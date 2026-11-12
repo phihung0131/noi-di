@@ -1,5 +1,5 @@
 import { Store } from "@tanstack/store";
-import { applyPrompt, chatId, hydrate, isGenerating, isHydrating, isNewChatPage, lastDomActivity, native, resetChatCache, sendText, snapshot } from "./bridge";
+import { applyPrompt, chatId, hydrate, isGenerating, isHydrating, isNewChatPage, health, lastDomActivity, native, snackbarText, switchToLighterModel, resetChatCache, sendText, snapshot } from "./bridge";
 import { DEFAULT_CONFIG } from "./langs";
 import { mic } from "./recorder";
 import { speak, speechStore, stopSpeaking } from "./speech";
@@ -165,6 +165,16 @@ export const retryReply = () => sendQuick(
   "Your previous reply was missing or cut off. Please answer my previous message again in full using the marker protocol, ending with @@VERDICT and @@Q.",
 );
 
+/** Hết hạn mức: chuyển sang model nhẹ hơn rồi nhờ giám khảo trả lời lại. */
+export async function switchModelAndRetry() {
+  try {
+    const id = await switchToLighterModel();
+    toast(`Đã chuyển sang ${id}. Đang gửi lại…`);
+    await sleep(600);
+    await retryReply();
+  } catch (e) { toast((e as Error).message); }
+}
+
 export async function summarize() {
   try { await sendText(get().session.output === "en" ? "Summarize session" : "Tổng kết buổi"); } catch (e) { toast((e as Error).message); }
 }
@@ -215,6 +225,9 @@ async function onRoute() {
 }
 
 let quietSince = 0;
+let lastSnack = "";
+let healthTick = 0;
+const healthWarned = new Set<string>();
 /**
  * Giám khảo "im lặng": lượt cuối là của user / model rỗng, hoặc model trả lời nửa chừng
  * (đã chấm nhưng thiếu verdict lẫn câu hỏi, không phải bản tổng kết). Chờ 7s trước khi báo.
@@ -222,6 +235,7 @@ let quietSince = 0;
 export function isStalledState(turns: Turn[], gen: boolean): boolean {
   const last = turns[turns.length - 1];
   if (!last || gen) return false;
+  if (last.role === "model" && last.error) return false;
   if (last.role === "user" || last.empty) return true;
   const prevUser = [...turns].reverse().find((t) => t.role === "user");
   const askedSummary = prevUser?.role === "user" && /tổng kết|summari[sz]e/i.test(prevUser.text);
@@ -244,6 +258,17 @@ function tick() {
   const stalled = stallCheck(turns, gen);
   const same = turns.length === get().turns.length && turns.every((t, i) => t === get().turns[i]);
   if (!same || gen !== get().generating || stalled !== get().stalled || isHydrating() !== get().hydrating) set({ turns: same ? get().turns : turns, generating: gen, stalled, hydrating: isHydrating() });
+
+  // AI Studio đổi giao diện? báo một lần cho từng thứ không dò được
+  if (++healthTick % 20 === 0) {
+    const miss = health().filter((m) => !healthWarned.has(m));
+    if (miss.length) { miss.forEach((m) => healthWarned.add(m)); console.warn("[noidi] không dò được:", miss); toast(`AI Studio có thể đã đổi giao diện: không thấy ${miss.join(", ")}. Một số tính năng có thể lỗi.`); }
+  }
+
+  // thông báo (snackbar) của AI Studio: báo lỗi cho người dùng thay vì để im lặng
+  const sb = snackbarText();
+  if (sb && sb !== lastSnack) { lastSnack = sb; if (/error|fail|limit|quota|unable|lỗi/i.test(sb)) toast(`AI Studio: ${sb}`); }
+  if (!sb) lastSnack = "";
 
   // gắn cấu hình cho chat vừa tạo
   const id = chatId();

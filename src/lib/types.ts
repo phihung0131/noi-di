@@ -39,6 +39,8 @@ export interface ModelTurn {
   prep?: number;
   /** Tên mục (marker) đang được model viết dở; undefined khi đã xong */
   open?: string;
+  /** Lỗi AI Studio in trong lượt này (vd. rate limit) */
+  error?: string;
   /** true khi chưa có nội dung nào (turn lazy chưa render hoặc đang chờ model) */
   empty: boolean;
 }
