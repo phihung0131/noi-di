@@ -1,5 +1,5 @@
 import { useStore } from "@tanstack/react-store";
-import { BookMarked, ChevronDown, ClipboardList, Cpu, Lock, Plus, SlidersHorizontal, X } from "lucide-react";
+import { BookMarked, ChevronDown, ClipboardList, Coffee, Cpu, Lock, Plus, SlidersHorizontal, X } from "lucide-react";
 import { appStore, isLocked, setDialog, setOn, summarize } from "@/lib/controller";
 import { langChip, MODES } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
@@ -52,6 +52,7 @@ export function Header() {
         </Tip>
         <Trend turns={turns} />
         {canSummarize && <Tip label="Tổng kết buổi: điểm mạnh, lỗi lặp lại, việc cần luyện"><Button variant="ghost" size="icon" aria-label="Tổng kết buổi" onClick={() => void summarize()}><ClipboardList size={18} /></Button></Tip>}
+        <Tip label="Mời tác giả ly cà phê"><Button variant="ghost" size="icon" aria-label="Mời tác giả ly cà phê" onClick={() => setDialog("donate")}><Coffee size={18} /></Button></Tip>
         <Tip label="Sổ từ vựng"><Button variant="ghost" size="icon" aria-label="Sổ từ vựng" onClick={() => setDialog("notebook")}><BookMarked size={18} /></Button></Tip>
         <Tip label="Cài đặt"><Button variant="ghost" size="icon" aria-label="Cài đặt" onClick={() => setDialog("settings")}><SlidersHorizontal size={18} /></Button></Tip>
         <Button size="sm" className="ml-1" onClick={() => setDialog("new")}><Plus size={16} />Buổi mới</Button>

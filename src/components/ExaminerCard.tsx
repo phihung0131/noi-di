@@ -1,7 +1,7 @@
 import { useStore } from "@tanstack/react-store";
 import { AlertTriangle, ChevronDown, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
-import { appStore, retryReply, setDialog, skipQuestion, switchModelAndRetry } from "@/lib/controller";
+import { appStore, openReport, retryReply, setDialog, skipQuestion, switchModelAndRetry } from "@/lib/controller";
 import { classifyError } from "@/lib/errors";
 import { speakable } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
@@ -69,6 +69,7 @@ function ErrorCard({ message, latest }: { message: string; latest: boolean }) {
           {kind === "limit" && <Button size="sm" onClick={() => void switchModelAndRetry()}>Chuyển sang model nhẹ hơn</Button>}
           {kind === "limit" && <Button size="sm" variant="outline" onClick={() => setDialog("model")}>Chọn model khác</Button>}
           <Button size="sm" variant="outline" onClick={() => void retryReply()}>Thử lại</Button>
+          <Button size="sm" variant="ghost" onClick={() => openReport({ category: "studio", note: `AI Studio báo: ${message}` })}>Báo lỗi này</Button>
         </div>
       )}
     </section>

@@ -33,6 +33,8 @@ export const storage = {
   setSession: async (id: string, c: SessionConfig) => write("sessions", { ...(await read<Record<string, SessionConfig>>("sessions", {})), [id]: c }),
   pending: () => read<{ config: SessionConfig } | null>("pending", null),
   setPending: (v: { config: SessionConfig } | null) => write("pending", v),
+  stats: () => read<{ answers: number; nudged: number }>("stats", { answers: 0, nudged: 0 }),
+  setStats: (v: { answers: number; nudged: number }) => write("stats", v),
   notes: () => read<NoteItem[]>("notes", []),
   setNotes: (n: NoteItem[]) => write("notes", n),
 };

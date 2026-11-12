@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
-import { BookMarked, Cpu, ExternalLink, Mic, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Volume2, VolumeX, Zap } from "lucide-react";
+import { ArrowLeft, BookMarked, Bug, Coffee, Cpu, ExternalLink, Mic, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Volume2, VolumeX, Zap } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
+import { DonateView, ReportView } from "@/components/Support";
+import { baseDiag } from "@/lib/diag";
+import type { Diag } from "@/lib/support";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { langChip, MODES } from "@/lib/langs";
@@ -40,6 +43,7 @@ export function Popup() {
 
 function Shell() {
   const [tab, setTab] = useState<"run" | "notes" | "settings">("run");
+  const [view, setView] = useState<null | "donate" | "report">(null);
   const [sysDark, setSysDark] = useState(() => matchMedia("(prefers-color-scheme: dark)").matches);
   useEffect(() => { const m = matchMedia("(prefers-color-scheme: dark)"); const h = () => setSysDark(m.matches); m.addEventListener("change", h); return () => m.removeEventListener("change", h); }, []);
   const prefs = useQuery({ queryKey: ["prefs"], queryFn: storage.prefs });
@@ -53,25 +57,50 @@ function Shell() {
         <Logo size={30} />
         <div className="leading-tight"><div className="text-[15px] font-semibold">Nói Đi</div><div className="text-xs text-muted-foreground">Luyện nói với giám khảo AI</div></div>
       </header>
-      <nav className="grid grid-cols-3 gap-1 border-b border-border p-1.5" role="tablist">
-        {([["run", "Luyện nói", Mic], ["notes", "Từ vựng", BookMarked], ["settings", "Cài đặt", SlidersHorizontal]] as const).map(([id, label, Icon]) => (
-          <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-            className={cn("flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", tab === id ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted/60")}>
-            <Icon size={14} /><span className="truncate">{label}</span>{id === "notes" && !!notes.data?.length && <span className="rounded-full bg-primary/15 px-1.5 text-[11px] tabular-nums text-primary">{notes.data.length}</span>}
-          </button>
-        ))}
-      </nav>
-      <main className="flex-1 p-4">
-        {tab === "run" && <RunTab />}
-        {tab === "notes" && <NotesTab prefs={prefs.data ?? DEFAULT_PREFS} />}
-        {tab === "settings" && <SettingsTab prefs={prefs.data ?? DEFAULT_PREFS} />}
-      </main>
-      <footer className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
-        <span className="truncate">Alt+R ghi/dừng · Alt+P nghe lại</span>
-        <a href="https://github.com/phihung0131/noi-di" target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-foreground"><ExternalLink size={12} />GitHub</a>
+      {view ? (
+        <main className="flex-1 p-4">
+          <button className="mb-3 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground" onClick={() => setView(null)}><ArrowLeft size={15} />Quay lại</button>
+          <h2 className="mb-3 text-lg font-semibold">{view === "donate" ? "Mời tác giả ly cà phê" : "Báo sự cố"}</h2>
+          {view === "donate" ? <DonateView open={openTab} /> : <ReportView getDiag={popupDiag} open={openTab} />}
+        </main>
+      ) : (
+        <>
+          <nav className="grid grid-cols-3 gap-1 border-b border-border p-1.5" role="tablist">
+            {([["run", "Luyện nói", Mic], ["notes", "Từ vựng", BookMarked], ["settings", "Cài đặt", SlidersHorizontal]] as const).map(([id, label, Icon]) => (
+              <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+                className={cn("flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", tab === id ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted/60")}>
+                <Icon size={14} /><span className="truncate">{label}</span>{id === "notes" && !!notes.data?.length && <span className="rounded-full bg-primary/15 px-1.5 text-[11px] tabular-nums text-primary">{notes.data.length}</span>}
+              </button>
+            ))}
+          </nav>
+          <main className="flex-1 p-4">
+            {tab === "run" && <RunTab />}
+            {tab === "notes" && <NotesTab prefs={prefs.data ?? DEFAULT_PREFS} />}
+            {tab === "settings" && <SettingsTab prefs={prefs.data ?? DEFAULT_PREFS} />}
+          </main>
+        </>
+      )}
+      <footer className="flex items-center justify-between border-t border-border px-3 py-1.5 text-xs text-muted-foreground">
+        <span className="flex gap-1">
+          <Button variant="ghost" size="xs" onClick={() => setView("donate")}><Coffee size={13} />Ủng hộ</Button>
+          <Button variant="ghost" size="xs" onClick={() => setView("report")}><Bug size={13} />Báo sự cố</Button>
+        </span>
+        <a href="https://github.com/phihung0131/noi-di" target="_blank" rel="noreferrer" className="flex items-center gap-1 px-2 hover:text-foreground"><ExternalLink size={12} />GitHub</a>
       </footer>
     </div>
   );
+}
+
+const openTab = (url: string) => { void chrome.tabs.create({ url }); };
+
+/** Thông tin kỹ thuật: cơ bản + trạng thái từ tab AI Studio nếu kết nối được. */
+async function popupDiag(): Promise<Diag> {
+  const d: Diag = baseDiag();
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab?.id && tab.url?.startsWith(STUDIO)) {
+    try { Object.assign(d, (await chrome.tabs.sendMessage(tab.id, { noidi: "diag" })) as Diag); } catch { d["Tab AI Studio"] = "chưa kết nối (cần tải lại trang)"; }
+  } else d["Tab đang xem"] = "không phải AI Studio";
+  return d;
 }
 
 /* ---------------- Tab Luyện nói ---------------- */

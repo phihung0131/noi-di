@@ -1,9 +1,11 @@
 import { Store } from "@tanstack/store";
 import { applyPrompt, chatId, hydrate, isGenerating, isHydrating, isNewChatPage, currentModelId, health, lastDomActivity, native, snackbarText, switchToLighterModel, resetChatCache, selectModel, sendText, snapshot } from "./bridge";
+import { baseDiag } from "./diag";
 import { DEFAULT_CONFIG } from "./langs";
 import { mic } from "./recorder";
 import { speak, speechStore, stopSpeaking } from "./speech";
 import { DEFAULT_PREFS, storage } from "./storage";
+import type { CategoryId, Diag } from "./support";
 import type { ModelTurn, Prefs, RecState, SessionConfig, Turn } from "./types";
 import { sleep, waitFor } from "./utils";
 
@@ -23,7 +25,12 @@ export interface AppState {
   sent: Record<number, SentRec>;
   playingRec: string | null;
   toast: { id: number; msg: string } | null;
-  dialog: null | "new" | "settings" | "notebook" | "model";
+  dialog: null | "new" | "settings" | "notebook" | "model" | "donate" | "report";
+  reportPreset: { category?: CategoryId; note?: string } | null;
+  /** true khi đang chụp màn hình: ẩn lớp hộp thoại */
+  capturing: boolean;
+  /** Mốc số câu đã luyện để nhắc ủng hộ nhẹ nhàng (null = không hiện) */
+  nudge: number | null;
   /** Model đang chọn trong AI Studio */
   model: string;
 }
@@ -32,7 +39,7 @@ export const appStore = new Store<AppState>({
   on: false, ready: false, turns: [], generating: false, stalled: false, hydrating: false, chatId: null,
   session: { ...DEFAULT_CONFIG } as SessionConfig, prefs: DEFAULT_PREFS,
   rec: { state: "idle", startedAt: 0, ms: 0, url: null, peaks: [] },
-  sent: {}, playingRec: null, toast: null, dialog: null, model: "",
+  sent: {}, playingRec: null, toast: null, dialog: null, model: "", reportPreset: null, capturing: false, nudge: null,
 });
 const set = (p: Partial<AppState>) => appStore.setState((s) => ({ ...s, ...p }));
 const get = () => appStore.state;
@@ -193,6 +200,57 @@ export async function pickModel(id: string) {
   } catch (e) { toast((e as Error).message); }
 }
 
+/* ---------- ủng hộ & báo sự cố ---------- */
+const NUDGE_AT = [10, 50, 150];
+async function countAnswer() {
+  const st = await storage.stats();
+  st.answers++;
+  const next = NUDGE_AT.find((t) => t > st.nudged);
+  await storage.setStats(st);
+  if (next && st.answers >= next) set({ nudge: next });
+}
+/** Đóng thẻ nhắc; mốc này sẽ không hiện lại. */
+export async function dismissNudge(openDonate = false) {
+  const m = get().nudge;
+  if (m) await storage.setStats({ ...(await storage.stats()), nudged: m });
+  set({ nudge: null });
+  if (openDonate) set({ dialog: "donate" });
+}
+export const openReport = (preset?: { category?: CategoryId; note?: string }) => set({ reportPreset: preset ?? null, dialog: "report" });
+
+/** Thông tin kỹ thuật cho báo cáo: không có nội dung hội thoại, không có ID cuộc trò chuyện. */
+export async function collectDiagnostics(): Promise<Diag> {
+  const st = get();
+  const last = [...st.turns].reverse().find((t) => t.role === "model");
+  let mic = "không rõ";
+  try { mic = (await navigator.permissions.query({ name: "microphone" as PermissionName })).state; } catch { /* */ }
+  return {
+    ...baseDiag(),
+    "Trang AI Studio": isNewChatPage() ? "new_chat" : chatId() ? "prompts/<id>" : location.pathname.split("/")[1] || "/",
+    "Model": st.model || undefined,
+    "Buổi": `${st.session.lang} · ${st.session.mode} · ${st.session.level} · giải thích ${st.session.output}`,
+    "Số lượt": st.turns.length,
+    "Giám khảo đang trả lời": st.generating,
+    "Giám khảo im lặng/cắt ngang": st.stalled,
+    "Trạng thái ghi âm": st.rec.state,
+    "Quyền micro": mic,
+    "Lỗi AI Studio gần nhất": last && last.role === "model" ? last.error : undefined,
+    "Không dò được": health().join(", ") || undefined,
+    "Giọng đọc có sẵn": typeof speechSynthesis !== "undefined" ? speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith(st.session.lang.slice(0, 2).toLowerCase())).length : undefined,
+  };
+}
+
+/** Ẩn Nói Đi trước khi chụp; trả hàm khôi phục. mode "page" cho thấy trang AI Studio gốc. */
+export async function prepareCapture(mode: "ui" | "page"): Promise<() => void> {
+  const host = document.getElementById("noidi-host");
+  set({ capturing: true });
+  if (mode === "page") { document.documentElement.classList.remove("noidi-on"); if (host) host.style.visibility = "hidden"; }
+  return () => {
+    set({ capturing: false });
+    if (mode === "page") { if (get().on) document.documentElement.classList.add("noidi-on"); if (host) host.style.visibility = ""; }
+  };
+}
+
 export async function summarize() {
   try { await sendText(get().session.output === "en" ? "Summarize session" : "Tổng kết buổi"); } catch (e) { toast((e as Error).message); }
 }
@@ -308,6 +366,7 @@ function tick() {
     const last = turns[turns.length - 1] as ModelTurn | undefined;
     if (last && last.role === "model" && !last.empty && !played.has(last.key)) {
       played.add(last.key);
+      if (last.score) void countAnswer();
       if (get().prefs.autoPlay && (last.q || last.say)) playLatest();
     }
   }
@@ -338,13 +397,14 @@ function listenPopup() {
     switch (m?.noidi) {
       case "status": {
         const score = [...st.turns].reverse().map((t) => (t.role === "model" ? t.score?.find((x) => x.key === "NATIVE")?.value : undefined)).find(Boolean);
-        reply({ on: st.on, hasSession: st.turns.length > 0, rec: st.rec.state, model: st.model, session: st.session, generating: st.generating, score: score ? Number(score) : undefined });
+        reply({ on: st.on, hasSession: st.turns.length > 0, rec: st.rec.state, model: st.model, session: st.session, generating: st.generating, score: score ? Number(score) : undefined, turns: st.turns.length, stalled: st.stalled, missing: health(), lastError: [...st.turns].reverse().map((t) => (t.role === "model" ? t.error : undefined)).find(Boolean) });
         break;
       }
       case "open": void setOn(true); reply({ ok: true }); break;
       case "record": void (async () => { await setOn(true); if (get().turns.length > 0) void startRecording(); else set({ dialog: "new" }); })(); reply({ ok: true }); break;
       case "new": void setOn(true).then(() => set({ dialog: "new" })); reply({ ok: true }); break;
       case "model": void setOn(true).then(() => set({ dialog: "model" })); reply({ ok: true }); break;
+      case "diag": void collectDiagnostics().then((d) => reply(d)); return true;
       default: return false;
     }
     return false;

@@ -39,7 +39,8 @@
     {
       "resources": [
         "dist/fonts/*",
-        "dist/icons/*"
+        "dist/icons/*",
+        "dist/donate-qr.jpg"
       ],
       "matches": [
         "https://aistudio.google.com/*"
@@ -55,5 +56,11 @@
       "48": "dist/icons/icon-48.png",
       "128": "dist/icons/icon-128.png"
     }
+  },
+  "host_permissions": [
+    "https://aistudio.google.com/*"
+  ],
+  "background": {
+    "service_worker": "dist/background.js"
   }
 }

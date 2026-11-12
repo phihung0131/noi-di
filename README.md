@@ -21,6 +21,11 @@ Sau mỗi lần build, bấm reload trên thẻ extension.
 
 Bấm biểu tượng Nói Đi trên thanh công cụ Chrome: nút **Bắt đầu nói**, **Buổi mới**, **Chọn model**, **Sổ từ vựng** (nghe lại, tìm, xoá) và **Cài đặt nhanh**. Popup điều khiển tab AI Studio đang mở qua tin nhắn của extension (`activeTab`, không xin quyền đọc mọi trang).
 
+## Ủng hộ và báo sự cố
+
+- **Ủng hộ:** biểu tượng cà phê ở header (và trong popup) mở mã QR VietQR của tác giả. Sau khi bạn luyện xong 10, 50, 150 câu có một thẻ nhắc nhẹ, đóng được và không hiện lại ở mốc đó.
+- **Báo sự cố:** chọn loại lỗi, mô tả thêm nếu cần, chụp màn hình (giao diện Nói Đi hoặc trang AI Studio gốc), rồi mở Gmail/app mail với thư soạn sẵn gửi tới tác giả. Thư kèm thông tin kỹ thuật (phiên bản, trình duyệt, model, trạng thái, quyền micro), **không** có nội dung hội thoại. Link thư không đính kèm file được nên ảnh được chép vào clipboard để dán (Ctrl+V) vào thư.
+
 ## Phát triển
 
 ```bash

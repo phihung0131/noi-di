@@ -2,7 +2,8 @@ import { useStore } from "@tanstack/react-store";
 import { Check, Loader2, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { listModels, type ModelInfo } from "@/lib/bridge";
-import { appStore, isLocked, pickModel, setDialog, startNewSession, updatePrefs } from "@/lib/controller";
+import { appStore, collectDiagnostics, isLocked, openReport, pickModel, prepareCapture, setDialog, startNewSession, updatePrefs } from "@/lib/controller";
+import { DonateView, ReportView } from "./Support";
 import { LANGS, LEVELS, MODES } from "@/lib/langs";
 import { onVoices, voicesFor } from "@/lib/speech";
 import { storage } from "@/lib/storage";
@@ -93,6 +94,10 @@ export function SettingsDialog() {
           <div className={row}><div><div className="text-sm font-medium">Tự hiện bản dịch</div></div><Switch label="Tự hiện bản dịch" checked={prefs.showTrans} onCheckedChange={(v) => void updatePrefs({ showTrans: v })} /></div>
           <Field label="Giao diện"><Select ariaLabel="Giao diện" value={prefs.theme} onChange={(v) => void updatePrefs({ theme: v as "auto" | "light" | "dark" })} options={[{ value: "auto", label: "Theo hệ thống" }, { value: "light", label: "Sáng" }, { value: "dark", label: "Tối" }]} /></Field>
           <p className="text-xs leading-relaxed text-muted-foreground">Phím tắt: Alt+R ghi/dừng · Alt+P nghe lại · Alt+Enter gửi · Alt+L nghe lại câu hỏi.</p>
+          <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+            <Button variant="outline" size="sm" onClick={() => openReport()}>Báo sự cố</Button>
+            <Button variant="outline" size="sm" onClick={() => setDialog("donate")}>Mời tác giả ly cà phê</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -139,6 +144,19 @@ export function ModelDialog() {
           </ul>
         )}
       </DialogContent>
+    </Dialog>
+  );
+}
+
+export function SupportDialog() {
+  const dialog = useStore(appStore, (s) => s.dialog);
+  const preset = useStore(appStore, (s) => s.reportPreset);
+  const open = dialog === "donate" || dialog === "report";
+  const openUrl = (u: string) => window.open(u, "_blank", "noopener");
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && setDialog(null)}>
+      {dialog === "donate" && <DialogContent title="Mời tác giả ly cà phê" description="Cảm ơn bạn đã dùng Nói Đi."><DonateView open={openUrl} /></DialogContent>}
+      {dialog === "report" && <DialogContent title="Báo sự cố" wide><ReportView key={preset?.note ?? "r"} getDiag={collectDiagnostics} open={openUrl} captureModes prepareCapture={prepareCapture} preset={preset ?? undefined} /></DialogContent>}
     </Dialog>
   );
 }
