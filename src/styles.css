@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host { all: initial; }
+.noidi {
+  --background: 150 12% 96%; --foreground: 165 28% 9%; --card: 0 0% 100%;
+  --muted: 150 10% 92%; --muted-foreground: 165 8% 38%; --border: 150 10% 86%;
+  --primary: 177 60% 15%; --primary-foreground: 150 30% 98%;
+  --accent: 38 92% 50%; --accent-soft: 45 100% 88%;
+  --destructive: 0 72% 51%; --success: 152 60% 30%; --ring: 177 60% 25%;
+  font-family: "NoiDi Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.5; color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+}
+.noidi.dark {
+  --background: 170 20% 6%; --foreground: 150 15% 92%; --card: 170 18% 9%;
+  --muted: 170 14% 13%; --muted-foreground: 160 8% 62%; --border: 170 14% 18%;
+  --primary: 168 55% 62%; --primary-foreground: 170 40% 8%;
+  --accent: 38 92% 55%; --accent-soft: 38 60% 22%;
+  --destructive: 0 78% 62%; --success: 150 55% 52%; --ring: 168 55% 62%;
+}
+.noidi *, .noidi *::before, .noidi *::after { box-sizing: border-box; border-color: hsl(var(--border)); }
+.noidi button { font: inherit; }
+.noidi ::-webkit-scrollbar { width: 10px; height: 10px; }
+.noidi ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
+
+/* nội dung nhận xét của giám khảo (HTML đã lọc) */
+.prose-fb { font-size: 14.5px; line-height: 1.65; }
+.prose-fb p { margin: .5em 0; }
+.prose-fb ul, .prose-fb ol { margin: .5em 0; padding-left: 1.25em; }
+.prose-fb ul { list-style: disc; } .prose-fb ol { list-style: decimal; }
+.prose-fb li { margin: .2em 0; }
+.prose-fb strong { font-weight: 600; }
+.prose-fb table { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: .75em 0; font-size: 13.5px; }
+.prose-fb th, .prose-fb td { border: 1px solid hsl(var(--border)); padding: 6px 10px; text-align: left; vertical-align: top; }
+.prose-fb th { background: hsl(var(--muted)); font-weight: 500; }
+.prose-fb h1, .prose-fb h2, .prose-fb h3, .prose-fb h4 { font-weight: 600; margin: .8em 0 .3em; }
+.prose-fb code { background: hsl(var(--muted)); padding: 1px 5px; border-radius: 4px; font-size: .92em; }
+.prose-fb blockquote { border-left: 3px solid hsl(var(--border)); padding-left: 12px; color: hsl(var(--muted-foreground)); }
+
+@media (prefers-reduced-motion: reduce) { .noidi * { animation: none !important; transition: none !important; } }

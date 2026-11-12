@@ -1,0 +1,157 @@
+import { useStore } from "@tanstack/react-store";
+import { ChevronDown, Eye, Languages, Lightbulb, MessageSquareQuote, Timer } from "lucide-react";
+import { memo, useEffect, useRef, useState } from "react";
+import { appStore } from "@/lib/controller";
+import type { ModelTurn } from "@/lib/types";
+import { cn, fmtTime } from "@/lib/utils";
+import { Fold, SaveBtn, SpeakBtn, useLang } from "./bits";
+import { Score } from "./Score";
+import { Button } from "./ui/button";
+import { Words } from "./Words";
+
+function Prep({ seconds }: { seconds: number }) {
+  const [left, setLeft] = useState<number | null>(null);
+  const t = useRef<number>(0);
+  useEffect(() => () => window.clearInterval(t.current), []);
+  const start = () => {
+    setLeft(seconds);
+    window.clearInterval(t.current);
+    t.current = window.setInterval(() => setLeft((l) => { if (l === null || l <= 1) { window.clearInterval(t.current); return 0; } return l - 1; }), 1000);
+  };
+  return (
+    <Button variant={left === 0 ? "success" : "secondary"} size="sm" onClick={start}>
+      <Timer size={16} />{left === null ? `Chuẩn bị ${seconds}s` : left === 0 ? "Hết giờ chuẩn bị, hãy nói" : fmtTime(left * 1000)}
+    </Button>
+  );
+}
+
+const Skeleton = () => (
+  <div className="flex items-center gap-1.5 py-1" aria-label="Giám khảo đang soạn câu trả lời">
+    {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 animate-dot rounded-full bg-muted-foreground" style={{ animationDelay: `${i * 0.18}s` }} />)}
+  </div>
+);
+
+export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming, answered }: { turn: ModelTurn; latest: boolean; streaming: boolean; answered: boolean }) {
+  const mode = useStore(appStore, (s) => s.session.mode);
+  const listenOnly = useStore(appStore, (s) => s.prefs.listenOnly);
+  const showTrans = useStore(appStore, (s) => s.prefs.showTrans);
+  const lang = useLang();
+  const [open, setOpen] = useState<{ tr?: boolean; hint?: boolean; sample?: boolean; fb?: boolean; reveal?: boolean }>({});
+  const t = turn;
+  const tgl = (k: keyof typeof open) => setOpen((o) => ({ ...o, [k]: !o[k] }));
+
+  const hasReview = !!(t.transcript || t.score || t.feedback || t.vocab?.length || t.verdict);
+  const concealSay = !!t.say && mode === "listening" && !answered && !open.reveal;
+  const concealQ = !!t.q && latest && listenOnly && !open.reveal;
+  const fbOpen = open.fb ?? latest;
+  const trOpen = open.tr ?? showTrans;
+  const audioId = (p: string) => `${p}:${t.key}`;
+
+  return (
+    <article className="animate-fade-in space-y-4" aria-label="Giám khảo">
+      {t.empty && (streaming ? <Skeleton /> : <p className="text-sm text-muted-foreground">Đang nạp lượt này từ AI Studio…</p>)}
+
+      {hasReview && (
+        <section className="space-y-3 rounded-lg border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold">{t.score ? "Nhận xét bài nói" : "Giám khảo"}</h3>
+            {t.verdict && (
+              <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", t.verdict === "pass" ? "bg-success/15 text-success" : "bg-accent/20 text-foreground")}>
+                {t.verdict === "pass" ? "Qua câu" : "Nói lại câu này"}
+              </span>
+            )}
+          </div>
+          {t.transcript && (
+            <blockquote className="border-l-2 border-primary/40 pl-3 font-serif text-[15px] italic text-muted-foreground">
+              “{t.transcript}”
+            </blockquote>
+          )}
+          {t.score && <Score items={t.score} />}
+          {t.feedback && (
+            <div>
+              <button className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => tgl("fb")} aria-expanded={fbOpen}>
+                <span>Chi tiết lỗi và gợi ý</span><ChevronDown size={16} className={cn("transition-transform", fbOpen && "rotate-180")} />
+              </button>
+              <Fold open={fbOpen}><div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.feedback }} /></Fold>
+            </div>
+          )}
+          {!!t.vocab?.length && (
+            <div>
+              <h4 className="mb-1.5 text-sm font-medium">Nói tự nhiên hơn</h4>
+              <ul className="divide-y divide-border rounded-lg border border-border">
+                {t.vocab.map((v, i) => {
+                  const [phrase, ...rest] = v.split(/\s[—–-]\s/);
+                  return (
+                    <li key={i} className="flex items-center gap-2 px-3 py-2">
+                      <div className="min-w-0 flex-1"><span className="font-serif text-[15px] font-semibold">{phrase}</span>{rest.length > 0 && <span className="ml-2 text-sm text-muted-foreground">{rest.join(" – ")}</span>}</div>
+                      <SpeakBtn id={`${audioId("vocab")}:${i}`} text={phrase} compact label={phrase} />
+                      <SaveBtn note={{ text: phrase, tr: rest.join(" – "), lang, kind: "vocab" }} />
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+
+      {t.say && (
+        <section className="rounded-lg border border-border bg-card p-4">
+          <p className="mb-2 text-sm text-muted-foreground">{mode === "listening" ? "Đoạn nghe" : "Giám khảo nói"}</p>
+          {concealSay ? (
+            <p className="font-serif text-lg text-muted-foreground">Nghe kỹ, chữ sẽ hiện sau khi bạn trả lời.</p>
+          ) : (
+            <Words id={audioId("say")} text={t.say} className="font-serif text-xl leading-relaxed" />
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <SpeakBtn id={audioId("say")} text={t.say} />
+            <SpeakBtn id={audioId("say")} text={t.say} slow />
+            {concealSay && <Button variant="ghost" size="sm" onClick={() => tgl("reveal")}><Eye size={16} />Xem chữ</Button>}
+          </div>
+        </section>
+      )}
+
+      {t.q && (
+        <section className={cn("rounded-lg border bg-card p-5", latest ? "border-primary/50" : "border-border")}>
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {t.part && <span className="rounded-full border border-border px-2 py-0.5">Part {t.part}</span>}
+            {t.q.n && <span className="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">Câu {t.q.n}</span>}
+          </div>
+          <div className={cn(concealQ && "select-none blur-md")} onClick={concealQ ? () => tgl("reveal") : undefined} aria-hidden={concealQ}>
+            <Words id={audioId("q")} text={t.q.text} className="font-serif text-[26px] font-medium leading-snug tracking-[-0.005em]" />
+          </div>
+          {concealQ && <p className="mt-2 text-xs text-muted-foreground">Chế độ nghe: bấm vào chữ để xem câu hỏi.</p>}
+          {t.roman && <p className="mt-1 text-sm text-muted-foreground">{t.roman}</p>}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <SpeakBtn id={audioId("q")} text={t.q.text} />
+            <SpeakBtn id={audioId("q")} text={t.q.text} slow />
+            {t.tr && <Button variant={trOpen ? "default" : "ghost"} size="sm" onClick={() => tgl("tr")} aria-pressed={trOpen}><Languages size={16} />Dịch</Button>}
+            {t.hint && <Button variant={open.hint ? "default" : "ghost"} size="sm" onClick={() => tgl("hint")} aria-pressed={!!open.hint}><Lightbulb size={16} />Gợi ý</Button>}
+            {t.sample && <Button variant={open.sample ? "default" : "ghost"} size="sm" onClick={() => tgl("sample")} aria-pressed={!!open.sample}><MessageSquareQuote size={16} />Câu mẫu</Button>}
+            {t.prep && latest && <Prep seconds={t.prep} />}
+          </div>
+          {t.tr && <Fold open={trOpen}><p className="text-[15px] text-muted-foreground">{t.tr}</p></Fold>}
+          {t.hint && <Fold open={!!open.hint}><div className="rounded-lg bg-accent-soft/60 p-3"><div className="mb-1 text-sm font-medium">Gợi ý ý tưởng</div><div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.hint }} /></div></Fold>}
+          {t.sample && (
+            <Fold open={!!open.sample}>
+              <div className="rounded-lg bg-muted/70 p-4">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">Câu mẫu</span>
+                  <span className="flex gap-1.5">
+                    <SpeakBtn id={audioId("sample")} text={t.sample.text} compact label="câu mẫu" />
+                    <SpeakBtn id={audioId("sample")} text={t.sample.text} slow compact label="câu mẫu" />
+                    <SaveBtn note={{ text: t.sample.text, tr: t.sample.tr, lang, kind: "sample" }} />
+                  </span>
+                </div>
+                <Words id={audioId("sample")} text={t.sample.text} className="font-serif text-lg leading-relaxed" />
+                {t.sample.roman && <p className="mt-2 text-sm text-muted-foreground">{t.sample.roman}</p>}
+                {t.sample.tr && <p className="mt-2 text-sm text-muted-foreground">{t.sample.tr}</p>}
+                <p className="mt-3 text-xs text-muted-foreground">Mẹo: nghe chậm, nhại theo từng câu, rồi tự ghi âm. Bấm vào một từ để nghe riêng từ đó.</p>
+              </div>
+            </Fold>
+          )}
+        </section>
+      )}
+    </article>
+  );
+});
