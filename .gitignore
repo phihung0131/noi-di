@@ -4,3 +4,4 @@ public/fonts
 public/icons/*.png
 .taste-skill
 *.log
+popup-preview.html

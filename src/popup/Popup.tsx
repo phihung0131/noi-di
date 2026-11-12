@@ -4,7 +4,6 @@ import { BookMarked, Cpu, ExternalLink, Mic, Plus, RefreshCw, Search, SlidersHor
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { langChip, MODES } from "@/lib/langs";
 import { useNoteActions, useNotes } from "@/lib/notes";
@@ -55,10 +54,10 @@ function Shell() {
         <div className="leading-tight"><div className="text-[15px] font-semibold">Nói Đi</div><div className="text-xs text-muted-foreground">Luyện nói với giám khảo AI</div></div>
       </header>
       <nav className="grid grid-cols-3 gap-1 border-b border-border p-1.5" role="tablist">
-        {([["run", "Luyện nói", Mic], ["notes", `Sổ từ vựng${notes.data?.length ? ` (${notes.data.length})` : ""}`, BookMarked], ["settings", "Cài đặt", SlidersHorizontal]] as const).map(([id, label, Icon]) => (
+        {([["run", "Luyện nói", Mic], ["notes", "Từ vựng", BookMarked], ["settings", "Cài đặt", SlidersHorizontal]] as const).map(([id, label, Icon]) => (
           <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
             className={cn("flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", tab === id ? "bg-muted font-medium" : "text-muted-foreground hover:bg-muted/60")}>
-            <Icon size={14} /><span className="truncate">{label}</span>
+            <Icon size={14} /><span className="truncate">{label}</span>{id === "notes" && !!notes.data?.length && <span className="rounded-full bg-primary/15 px-1.5 text-[11px] tabular-nums text-primary">{notes.data.length}</span>}
           </button>
         ))}
       </nav>
@@ -68,7 +67,7 @@ function Shell() {
         {tab === "settings" && <SettingsTab prefs={prefs.data ?? DEFAULT_PREFS} />}
       </main>
       <footer className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
-        <span>Alt+R ghi/dừng · Alt+P nghe lại · Alt+L nghe câu hỏi</span>
+        <span className="truncate">Alt+R ghi/dừng · Alt+P nghe lại</span>
         <a href="https://github.com/phihung0131/noi-di" target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-foreground"><ExternalLink size={12} />GitHub</a>
       </footer>
     </div>
@@ -106,8 +105,8 @@ function RunTab() {
   return (
     <div className="space-y-4">
       <Button size="lg" className="h-12 w-full text-base" disabled={"disabled" in primary && primary.disabled} onClick={() => void primary.run().then(() => ctx.refetch())}>{primary.icon}{primary.label}</Button>
-      <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" onClick={() => void command(tabId, "new")}><Plus size={16} />Buổi mới</Button>
+      <div className={cn("grid gap-2", s.on && !s.hasSession ? "grid-cols-1" : "grid-cols-2")}>
+        {!(s.on && !s.hasSession) && <Button variant="outline" onClick={() => void command(tabId, "new")}><Plus size={16} />Buổi mới</Button>}
         <Button variant="outline" onClick={() => void command(tabId, "model")}><Cpu size={16} />Chọn model</Button>
       </div>
       <SessionCard s={s} />
@@ -181,8 +180,15 @@ function SettingsTab({ prefs }: { prefs: Prefs }) {
       <div className={row}><div className="text-sm font-medium">Tự hiện bản dịch</div><Switch label="Tự hiện bản dịch" checked={prefs.showTrans} onCheckedChange={(v) => save.mutate({ showTrans: v })} /></div>
       <label className="block space-y-1.5"><span className="flex justify-between text-sm font-medium"><span>Tốc độ đọc</span><span className="tabular-nums text-muted-foreground">{prefs.rate.toFixed(2)}×</span></span>
         <input type="range" min={0.5} max={1.2} step={0.05} value={prefs.rate} onChange={(e) => save.mutate({ rate: parseFloat(e.target.value) })} className="w-full accent-[hsl(var(--primary))]" aria-label="Tốc độ đọc" /></label>
-      <label className="block space-y-1.5"><span className="text-sm font-medium">Giao diện</span>
-        <Select ariaLabel="Giao diện" value={prefs.theme} onChange={(v) => save.mutate({ theme: v as Prefs["theme"] })} options={[{ value: "auto", label: "Theo hệ thống" }, { value: "light", label: "Sáng" }, { value: "dark", label: "Tối" }]} /></label>
+      <div className="space-y-1.5" role="radiogroup" aria-label="Giao diện">
+        <span className="text-sm font-medium">Giao diện</span>
+        <div className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-muted/50 p-1">
+          {([["auto", "Theo máy"], ["light", "Sáng"], ["dark", "Tối"]] as const).map(([v, label]) => (
+            <button key={v} type="button" role="radio" aria-checked={prefs.theme === v} onClick={() => save.mutate({ theme: v })}
+              className={cn("rounded-md px-2 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", prefs.theme === v ? "bg-primary font-medium text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{label}</button>
+          ))}
+        </div>
+      </div>
       <p className="text-xs text-muted-foreground">Ngôn ngữ, chế độ và trình độ chọn khi tạo buổi mới, không đổi được giữa buổi.</p>
     </div>
   );
