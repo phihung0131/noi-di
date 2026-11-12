@@ -33,6 +33,15 @@ if (!window.__noidiLoaded) {
   style.textContent = css;
   const mount = document.createElement("div");
   shadow.append(style, mount);
+  /**
+   * Radix khoá cuộn (react-remove-scroll) bằng listener ở document và so sánh event.target.
+   * Trong Shadow DOM target bị đổi thành host nên nó tưởng cuộn ra ngoài hộp thoại và chặn.
+   * Chặn từ window (capture, chạy trước document): cuộn trong giao diện Nói Đi không đi tiếp tới lớp khoá;
+   * hành vi cuộn mặc định của trình duyệt vẫn chạy.
+   */
+  const fromUI = (e: Event) => e.composedPath().includes(host);
+  for (const type of ["wheel", "touchmove"] as const)
+    window.addEventListener(type, (e) => { if (fromUI(e)) e.stopPropagation(); }, { capture: true, passive: true });
   createRoot(mount).render(<App />);
   void boot();
 }
