@@ -114,7 +114,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
           {concealSay ? (
             <p className="font-serif text-lg text-muted-foreground">Nghe kỹ, chữ sẽ hiện sau khi bạn trả lời.</p>
           ) : (
-            <Words id={audioId("say")} fade={streaming} text={t.say} className="font-serif text-xl leading-relaxed" />
+            <Words id={audioId("say")} text={t.say} className="font-serif text-xl leading-relaxed" />
           )}
           <div className="mt-3 flex flex-wrap gap-2">
             <SpeakBtn id={audioId("say")} text={t.say} />
@@ -130,7 +130,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             {t.q.n && <span className="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">Câu {t.q.n}</span>}
           </div>
           <div className={cn(concealQ && "select-none blur-md")} onClick={concealQ ? () => tgl("reveal") : undefined} aria-hidden={concealQ}>
-            <Words id={audioId("q")} fade={streaming} text={t.q.text} className="font-serif text-[26px] font-medium leading-snug tracking-[-0.005em]" />
+            <Words id={audioId("q")} text={t.q.text} className="font-serif text-[26px] font-medium leading-snug tracking-[-0.005em]" />
           </div>
           {concealQ && <p className="mt-2 text-xs text-muted-foreground">Chế độ nghe: bấm vào chữ để xem câu hỏi.</p>}
           {t.roman && <p className="mt-1 text-sm text-muted-foreground">{t.roman}</p>}
