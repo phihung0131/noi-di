@@ -1,8 +1,29 @@
-import { Camera, Check, Copy, Download, ExternalLink, Mail, Star, Trash2 } from "lucide-react";
+import { Camera, Check, Coffee, Copy, Download, ExternalLink, Mail, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { buildReport, CATEGORIES, assetUrl, captureTab, copyImage, downloadImage, gmailUrl, mailtoUrl, SUPPORT, type CategoryId, type Diag } from "@/lib/support";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
+
+/* ---------------- Thẻ mời ủng hộ (dùng ở nhiều nơi) ---------------- */
+export function SupportCard({ title, text, actionLabel = "Mời cà phê", onAction, onDismiss, dismissLabel = "Để sau", compact }: {
+  title: string; text: string; actionLabel?: string; onAction: () => void; onDismiss?: () => void; dismissLabel?: string; compact?: boolean;
+}) {
+  return (
+    <aside aria-label="Mời tác giả ly cà phê" className={cn("relative overflow-hidden rounded-lg border border-accent/45 bg-accent-soft/50", compact ? "p-3" : "p-4")}>
+      <div className="flex items-start gap-3">
+        <span className={cn("flex shrink-0 items-center justify-center rounded-full bg-accent/25 text-accent", compact ? "h-8 w-8" : "h-10 w-10")}><Coffee size={compact ? 16 : 20} /></span>
+        <div className="min-w-0 flex-1">
+          <h3 className={cn("font-semibold text-foreground", compact ? "text-sm" : "text-[15px]")}>{title}</h3>
+          <p className={cn("mt-0.5 text-muted-foreground", compact ? "text-xs leading-relaxed" : "text-sm leading-relaxed")}>{text}</p>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <Button size={compact ? "xs" : "sm"} className="bg-accent text-black hover:bg-accent/90" onClick={onAction}><Coffee size={14} />{actionLabel}</Button>
+            {onDismiss && <Button size={compact ? "xs" : "sm"} variant="ghost" onClick={onDismiss}>{dismissLabel}</Button>}
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
 
 /* ---------------- Ủng hộ ---------------- */
 export function DonateView({ open }: { open: (url: string) => void }) {
@@ -17,6 +38,11 @@ export function DonateView({ open }: { open: (url: string) => void }) {
         Nói Đi miễn phí và mã nguồn mở. Nếu nó giúp bạn nói tự tin hơn, một ly cà phê sẽ cho mình thêm thời gian để làm tiếp: thêm ngôn ngữ, chấm điểm sát hơn, sửa lỗi nhanh hơn.
         Không bắt buộc đâu, bạn cứ dùng bình thường nhé.
       </p>
+      <ul className="space-y-1.5 text-sm">
+        {["Thêm ngôn ngữ, giọng đọc và chế độ luyện mới", "Chấm điểm phát âm sát giọng bản xứ hơn", "Sửa lỗi nhanh khi AI Studio đổi giao diện"].map((t) => (
+          <li key={t} className="flex items-start gap-2"><Check size={15} className="mt-0.5 shrink-0 text-success" /><span>{t}</span></li>
+        ))}
+      </ul>
       <div className="mx-auto w-[190px] rounded-lg border border-border bg-white p-2 shadow-sm">
         <img src={assetUrl("donate-qr.jpg")} alt={`Mã QR VietQR chuyển khoản tới ${b.owner}, ${b.name}`} className="h-auto w-full" />
       </div>
@@ -29,7 +55,7 @@ export function DonateView({ open }: { open: (url: string) => void }) {
           </Button>
         </div>
       </div>
-      <p className="text-center text-xs text-muted-foreground">Quét bằng app ngân hàng bất kỳ (VietQR). Cảm ơn bạn rất nhiều!</p>
+      <p className="text-center text-xs text-muted-foreground">Quét bằng app ngân hàng bất kỳ (VietQR). Một ly cà phê khoảng 25.000đ, bao nhiêu cũng là niềm vui. Cảm ơn bạn rất nhiều!</p>
       <div className="border-t border-border pt-3">
         <p className="mb-2 text-xs text-muted-foreground">Không tiện chuyển khoản? Những việc này cũng giúp ích rất nhiều:</p>
         <div className="flex flex-wrap gap-2">

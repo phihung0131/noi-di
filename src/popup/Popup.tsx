@@ -3,7 +3,7 @@ import { useStore } from "@tanstack/react-store";
 import { ArrowLeft, BookMarked, Bug, Coffee, Cpu, ExternalLink, Mic, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Volume2, VolumeX, Zap } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
-import { DonateView, ReportView } from "@/components/Support";
+import { DonateView, ReportView, SupportCard } from "@/components/Support";
 import { baseDiag } from "@/lib/diag";
 import type { Diag } from "@/lib/support";
 import { Button } from "@/components/ui/button";
@@ -74,7 +74,7 @@ function Shell() {
             ))}
           </nav>
           <main className="flex-1 p-4">
-            {tab === "run" && <RunTab />}
+            {tab === "run" && <RunTab onDonate={() => setView("donate")} />}
             {tab === "notes" && <NotesTab prefs={prefs.data ?? DEFAULT_PREFS} />}
             {tab === "settings" && <SettingsTab prefs={prefs.data ?? DEFAULT_PREFS} />}
           </main>
@@ -82,7 +82,7 @@ function Shell() {
       )}
       <footer className="flex items-center justify-between border-t border-border px-3 py-1.5 text-xs text-muted-foreground">
         <span className="flex gap-1">
-          <Button variant="ghost" size="xs" onClick={() => setView("donate")}><Coffee size={13} />Ủng hộ</Button>
+          <Button variant="ghost" size="xs" className="text-foreground" onClick={() => setView("donate")}><Coffee size={13} className="text-accent" />Ủng hộ</Button>
           <Button variant="ghost" size="xs" onClick={() => setView("report")}><Bug size={13} />Báo sự cố</Button>
         </span>
         <a href="https://github.com/phihung0131/noi-di" target="_blank" rel="noreferrer" className="flex items-center gap-1 px-2 hover:text-foreground"><ExternalLink size={12} />GitHub</a>
@@ -104,23 +104,24 @@ async function popupDiag(): Promise<Diag> {
 }
 
 /* ---------------- Tab Luyện nói ---------------- */
-function RunTab() {
+function RunTab({ onDonate }: { onDonate: () => void }) {
   const ctx = useQuery({ queryKey: ["ctx"], queryFn: readCtx, refetchInterval: 1500 });
   const c = ctx.data;
   if (!c) return <p className="py-10 text-center text-sm text-muted-foreground">Đang kiểm tra tab hiện tại…</p>;
 
+  const card = <div className="mt-4"><SupportCard compact title="Nói Đi miễn phí" text="Nếu thấy hữu ích, mời tác giả ly cà phê để mình làm tiếp nhé." onAction={onDonate} /></div>;
   if (c.kind === "away") {
     return (
-      <Panel title="Mở AI Studio để bắt đầu" text="Nói Đi chạy trên trang Google AI Studio. Mở một cuộc trò chuyện mới và bật chế độ luyện nói.">
+      <><Panel title="Mở AI Studio để bắt đầu" text="Nói Đi chạy trên trang Google AI Studio. Mở một cuộc trò chuyện mới và bật chế độ luyện nói.">
         <Button size="lg" className="w-full" onClick={() => { void chrome.tabs.create({ url: NEW_CHAT }); window.close(); }}><ExternalLink size={16} />Mở AI Studio</Button>
-      </Panel>
+      </Panel>{card}</>
     );
   }
   if (c.kind === "stale") {
     return (
-      <Panel title="Cần tải lại trang" text="Tab AI Studio này được mở trước khi cài hoặc cập nhật extension, nên chưa kết nối được.">
+      <><Panel title="Cần tải lại trang" text="Tab AI Studio này được mở trước khi cài hoặc cập nhật extension, nên chưa kết nối được.">
         <Button size="lg" className="w-full" onClick={() => { void chrome.tabs.reload(c.tabId); window.close(); }}><RefreshCw size={16} />Tải lại tab này</Button>
-      </Panel>
+      </Panel>{card}</>
     );
   }
 
@@ -139,6 +140,7 @@ function RunTab() {
         <Button variant="outline" onClick={() => void command(tabId, "model")}><Cpu size={16} />Chọn model</Button>
       </div>
       <SessionCard s={s} />
+      {card}
     </div>
   );
 }

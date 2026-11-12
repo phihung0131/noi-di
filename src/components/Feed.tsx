@@ -1,8 +1,8 @@
 import { useStore } from "@tanstack/react-store";
 import { Loader2 } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
-import { Coffee } from "lucide-react";
-import { appStore, dismissNudge, isLocked, openReport, retryReply, setDialog } from "@/lib/controller";
+import { appStore, dismissNudge, isLocked, openReport, quickLabel, retryReply, setDialog } from "@/lib/controller";
+import { SupportCard } from "./Support";
 import { Logo } from "./Logo";
 import { Button } from "./ui/button";
 import { ExaminerCard } from "./ExaminerCard";
@@ -28,6 +28,9 @@ export function Feed() {
     if (el && stick.current) el.scrollTop = el.scrollHeight;
   }, [turns, generating, stalled]);
 
+  const lastTurn = turns[turns.length - 1];
+  const prevUser = [...turns].reverse().find((t) => t.role === "user");
+  const summaryDone = !generating && !!lastTurn && lastTurn.role === "model" && !!lastTurn.score && prevUser?.role === "user" && quickLabel(prevUser.text)?.kind === "summary";
   const lastModel = turns.map((t) => t.role).lastIndexOf("model");
   const visible = turns.filter((t, i) => !(t.role === "user" && (t.hidden || t.empty)) && !(t.role === "model" && t.empty && !(generating && i === turns.length - 1)));
 
@@ -42,6 +45,7 @@ export function Feed() {
             <h2 className="text-2xl font-semibold">Luyện nói với giám khảo AI</h2>
             <p className="mt-2 text-muted-foreground">Chọn ngôn ngữ, chế độ và trình độ. Giám khảo hỏi, bạn nói, rồi nhận xét ngay từng câu.</p>
             <Button size="lg" className="mt-6" onClick={() => setDialog("new")}>Bắt đầu buổi mới</Button>
+            <div className="mt-8 text-left"><SupportCard compact title="Nói Đi miễn phí" text="Do một người làm và duy trì. Nếu thấy hữu ích, mời tác giả ly cà phê nhé." onAction={() => setDialog("donate")} /></div>
           </div>
         )}
         {visible.map((t) => {
@@ -49,11 +53,12 @@ export function Feed() {
           const idx = turns.indexOf(t);
           return <ExaminerCard key={t.key} turn={t} latest={idx === lastModel} streaming={generating && idx === turns.length - 1} answered={idx < turns.length - 1} />;
         })}
-        {nudge && !stalled && (
-          <aside className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 text-sm" aria-label="Lời nhắn từ tác giả">
-            <p className="flex min-w-0 flex-1 basis-64 items-start gap-2.5 text-muted-foreground"><Coffee size={16} className="mt-0.5 shrink-0 text-primary" /><span>Bạn đã luyện được <b className="font-semibold text-foreground">{nudge} câu</b>, tuyệt lắm. Nếu Nói Đi đang giúp ích, mời tác giả một ly cà phê để mình làm tiếp nhé. Không bắt buộc, và mình sẽ không nhắc thường xuyên.</span></p>
-            <span className="flex gap-2"><Button size="sm" onClick={() => void dismissNudge(true)}>Mời cà phê</Button><Button size="sm" variant="ghost" onClick={() => void dismissNudge(false)}>Để sau</Button></span>
-          </aside>
+        {summaryDone && !stalled && (
+          <SupportCard title="Hoàn thành một buổi luyện, giỏi lắm!" text="Nói Đi miễn phí và do một người làm. Nếu buổi luyện này có ích, mời tác giả ly cà phê để mình có thêm sức làm tiếp nhé." onAction={() => setDialog("donate")} />
+        )}
+        {nudge && !stalled && !summaryDone && (
+          <SupportCard title={`Bạn đã luyện ${nudge} câu rồi`} text="Nếu Nói Đi đang giúp ích, mời tác giả một ly cà phê để mình làm tiếp nhé. Không bắt buộc, và mình sẽ không nhắc thường xuyên."
+            onAction={() => void dismissNudge(true)} onDismiss={() => void dismissNudge(false)} />
         )}
         {stalled && (
           <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
