@@ -19,9 +19,17 @@ export const storage = {
   setOn: (v: boolean) => write("on", v),
   prefs: async () => ({ ...DEFAULT_PREFS, ...(await read<Partial<Prefs>>("prefs", {})) }),
   setPrefs: (p: Prefs) => write("prefs", p),
-  lastConfig: async () => ({ ...DEFAULT_CONFIG, ...(await read<Partial<SessionConfig>>("lastConfig", {})) }) as SessionConfig,
+  lastConfig: async () => {
+    const c = { ...DEFAULT_CONFIG, ...(await read<Partial<SessionConfig>>("lastConfig", {})) } as SessionConfig;
+    if ((c.mode as string) === "ielts") c.mode = "guided";
+    return c;
+  },
   setLastConfig: (c: SessionConfig) => write("lastConfig", c),
-  sessions: () => read<Record<string, SessionConfig>>("sessions", {}),
+  sessions: async () => {
+    const all = await read<Record<string, SessionConfig>>("sessions", {});
+    for (const k of Object.keys(all)) if ((all[k].mode as string) === "ielts") all[k] = { ...all[k], mode: "guided" };
+    return all;
+  },
   setSession: async (id: string, c: SessionConfig) => write("sessions", { ...(await read<Record<string, SessionConfig>>("sessions", {})), [id]: c }),
   pending: () => read<{ config: SessionConfig } | null>("pending", null),
   setPending: (v: { config: SessionConfig } | null) => write("pending", v),

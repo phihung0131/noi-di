@@ -47,12 +47,12 @@ export function say(key: string, text: string, slow = false, onEnd?: () => void)
 }
 export const sayWord = (w: string) => say("word:" + w, w.replace(/[^\p{L}\p{N}'’-]/gu, ""));
 
-export function latestSpeakable(turns: Turn[], mode: SessionConfig["mode"]): { key: string; text: string }[] {
+export function latestSpeakable(turns: Turn[], _mode: SessionConfig["mode"]): { key: string; text: string }[] {
   for (let i = turns.length - 1; i >= 0; i--) {
     const t = turns[i];
     if (t.role !== "model" || t.empty) continue;
     const out: { key: string; text: string }[] = [];
-    if (t.say && mode !== "ielts") out.push({ key: `say:${t.key}`, text: t.say });
+    if (t.say) out.push({ key: `say:${t.key}`, text: t.say });
     if (t.q) out.push({ key: `q:${t.key}`, text: t.q.text });
     if (out.length) return out;
   }

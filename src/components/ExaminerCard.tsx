@@ -25,6 +25,26 @@ function Prep({ seconds }: { seconds: number }) {
   );
 }
 
+function PhraseList({ title, items, idp, lang }: { title: string; items: string[]; idp: string; lang: string }) {
+  return (
+    <div>
+      <h4 className="mb-1.5 text-sm font-medium">{title}</h4>
+      <ul className="divide-y divide-border rounded-lg border border-border">
+        {items.map((v, i) => {
+          const [phrase, ...rest] = v.split(/\s[—–-]\s/);
+          return (
+            <li key={i} className="flex items-center gap-2 px-3 py-2">
+              <div className="min-w-0 flex-1"><span className="font-serif text-[15px] font-semibold">{phrase}</span>{rest.length > 0 && <span className="ml-2 text-sm text-muted-foreground">{rest.join(" · ")}</span>}</div>
+              <SpeakBtn id={`${idp}:${i}`} text={phrase} compact label={phrase} />
+              <SaveBtn note={{ text: phrase, tr: rest.join(" · "), lang, kind: "vocab" }} />
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 const Skeleton = () => (
   <div className="flex items-center gap-1.5 py-1" aria-label="Giám khảo đang soạn câu trả lời">
     {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 animate-dot rounded-full bg-muted-foreground" style={{ animationDelay: `${i * 0.18}s` }} />)}
@@ -40,8 +60,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
   const t = turn;
   const tgl = (k: keyof typeof open) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
-  const simpleFb = !!t.feedback && !t.transcript && !t.score && !t.vocab?.length && !t.verdict;
-  const hasReview = !simpleFb && !!(t.transcript || t.score || t.feedback || t.vocab?.length || t.verdict);
+  const simpleFb = !!t.feedback && !t.transcript && !t.score && !t.vocab?.length && !t.pron?.length && !t.verdict;
+  const hasReview = !simpleFb && !!(t.transcript || t.score || t.feedback || t.vocab?.length || t.pron?.length || t.verdict);
   const concealSay = !!t.say && mode === "listening" && !answered && !open.reveal;
   const concealQ = !!t.q && latest && listenOnly && !open.reveal;
   const fbOpen = open.fb ?? latest;
@@ -77,23 +97,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
               <Fold open={fbOpen}><div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.feedback }} /></Fold>
             </div>
           )}
-          {!!t.vocab?.length && (
-            <div>
-              <h4 className="mb-1.5 text-sm font-medium">Nói tự nhiên hơn</h4>
-              <ul className="divide-y divide-border rounded-lg border border-border">
-                {t.vocab.map((v, i) => {
-                  const [phrase, ...rest] = v.split(/\s[—–-]\s/);
-                  return (
-                    <li key={i} className="flex items-center gap-2 px-3 py-2">
-                      <div className="min-w-0 flex-1"><span className="font-serif text-[15px] font-semibold">{phrase}</span>{rest.length > 0 && <span className="ml-2 text-sm text-muted-foreground">{rest.join(" – ")}</span>}</div>
-                      <SpeakBtn id={`${audioId("vocab")}:${i}`} text={phrase} compact label={phrase} />
-                      <SaveBtn note={{ text: phrase, tr: rest.join(" – "), lang, kind: "vocab" }} />
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
+          {!!t.pron?.length && <PhraseList title="Phát âm cần sửa" items={t.pron} idp={audioId("pron")} lang={lang} />}
+          {!!t.vocab?.length && <PhraseList title="Nói tự nhiên hơn" items={t.vocab} idp={audioId("vocab")} lang={lang} />}
         </section>
       )}
 
@@ -116,7 +121,6 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
       {t.q && (
         <section className={cn("rounded-lg border bg-card p-5", latest ? "border-primary/50" : "border-border")}>
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            {t.part && <span className="rounded-full border border-border px-2 py-0.5">Part {t.part}</span>}
             {t.q.n && <span className="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">Câu {t.q.n}</span>}
           </div>
           <div className={cn(concealQ && "select-none blur-md")} onClick={concealQ ? () => tgl("reveal") : undefined} aria-hidden={concealQ}>

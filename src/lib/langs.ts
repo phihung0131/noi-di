@@ -1,22 +1,32 @@
-export interface LangInfo { name: string; short: string; roman: string | false }
+export interface LangInfo {
+  name: string;
+  short: string;
+  /** Hệ phiên âm đi kèm khi ngôn ngữ không dùng chữ Latin */
+  roman: string | false;
+  /** Trọng tâm phát âm và tự nhiên của riêng ngôn ngữ này, đưa vào prompt */
+  focus: string;
+}
 export const LANGS: Record<string, LangInfo> = {
-  "en-US": { name: "English (Mỹ)", short: "English", roman: false },
-  "en-GB": { name: "English (Anh)", short: "English", roman: false },
-  "ja-JP": { name: "日本語 (tiếng Nhật)", short: "tiếng Nhật", roman: "romaji" },
-  "ko-KR": { name: "한국어 (tiếng Hàn)", short: "tiếng Hàn", roman: "romanization" },
-  "zh-CN": { name: "中文 (tiếng Trung)", short: "tiếng Trung", roman: "pinyin có dấu thanh" },
-  "de-DE": { name: "Deutsch (tiếng Đức)", short: "tiếng Đức", roman: false },
+  "en-US": { name: "English (Mỹ)", short: "English", roman: false, focus: "trọng âm từ và câu, nối âm (linking), nuốt âm (reduction: gonna, wanna), âm /θ/ /ð/ /r/ /l/, âm cuối (-s, -ed, -t, -d), ngữ điệu lên xuống, flap /t/ kiểu Mỹ; thì động từ, mạo từ, số ít/nhiều; collocation và cụm từ người bản xứ hay dùng." },
+  "en-GB": { name: "English (Anh)", short: "English", roman: false, focus: "trọng âm từ và câu, nối âm, âm /θ/ /ð/, âm cuối, ngữ điệu kiểu Anh (non-rhotic, /t/ rõ); thì động từ, mạo từ; collocation và cách nói tự nhiên kiểu Anh." },
+  "ja-JP": { name: "日本語 (tiếng Nhật)", short: "tiếng Nhật", roman: "romaji", focus: "pitch accent (cao độ), âm dài/ngắn (長音), âm ngắt (促音 っ), âm mũi ん; trợ từ は/が/を/に/で, thể lịch sự (です・ます) so với thể thường, từ nối, aizuchi (ええ, そうですね) và cách nói tự nhiên thay vì dịch từng chữ." },
+  "ko-KR": { name: "한국어 (tiếng Hàn)", short: "tiếng Hàn", roman: "romanization", focus: "phân biệt phụ âm đơn/căng/bật hơi (ㄱ ㄲ ㅋ), nguyên âm ㅓ/ㅗ, patchim và quy tắc biến âm, ngữ điệu; trợ từ 은/는 이/가 을/를, mức độ kính ngữ (해요체/합쇼체), đuôi câu tự nhiên." },
+  "zh-CN": { name: "中文 (tiếng Trung phổ thông)", short: "tiếng Trung", roman: "pinyin có dấu thanh", focus: "4 thanh điệu và biến điệu (三声 liên tiếp, 不/一 đổi thanh), phụ âm uốn lưỡi zh/ch/sh/r, âm bật hơi, nhi hóa; lượng từ, trợ từ 了/过/着, trật tự câu, cách nói tự nhiên thay vì dịch từng chữ." },
+  "de-DE": { name: "Deutsch (tiếng Đức)", short: "tiếng Đức", roman: false, focus: "âm ü/ö/ä, ch (ich/ach), r, âm cuối vô thanh hóa, trọng âm từ ghép; giống từ (der/die/das), cách (Nominativ/Akkusativ/Dativ), vị trí động từ, câu phụ; từ nối và cách nói tự nhiên." },
+  "fr-FR": { name: "Français (tiếng Pháp)", short: "tiếng Pháp", roman: false, focus: "âm r uvular, nguyên âm mũi, u/ou, liaison và enchaînement, âm câm, nhịp điệu theo cụm; giống từ, mạo từ, chia động từ, passé composé/imparfait, đại từ; cách nói đời thường tự nhiên." },
+  "es-ES": { name: "Español (tiếng Tây Ban Nha)", short: "tiếng Tây Ban Nha", roman: false, focus: "r đơn/r rung, j/g, ll/y, b/v, nguyên âm thuần, trọng âm; giống từ, ser/estar, subjuntivo, pretérito/imperfecto, đại từ; cách nói tự nhiên đời thường." },
+  "pt-BR": { name: "Português (Brasil)", short: "tiếng Bồ Đào Nha", roman: false, focus: "nguyên âm mũi, âm r đầu/cuối từ, t/d trước i, lh/nh; chia động từ, giống từ, cách dùng ter/haver, đại từ; cách nói tự nhiên đời thường kiểu Brazil." },
 };
+
 export const LEVELS = [
-  { id: "A2", label: "A2 · Sơ cấp (Band ~4.0)" },
-  { id: "B1", label: "B1 · Trung cấp (Band ~5.0)" },
-  { id: "B2", label: "B2 · Khá (Band ~6.0–6.5)" },
-  { id: "C1", label: "C1 · Cao (Band ~7.0+)" },
+  { id: "A2", label: "A2 · Sơ cấp" },
+  { id: "B1", label: "B1 · Trung cấp" },
+  { id: "B2", label: "B2 · Khá" },
+  { id: "C1", label: "C1 · Cao cấp" },
 ];
 export const MODES = [
-  { id: "ielts", label: "IELTS Speaking", hint: "Part 1 → 2 → 3, chấm band" },
-  { id: "chat", label: "Hội thoại", hint: "Nói chuyện tự nhiên, nghe & trả lời" },
+  { id: "guided", label: "Hỏi đáp có chấm", hint: "Giám khảo hỏi, bạn nói, chấm điểm từng lượt" },
+  { id: "chat", label: "Hội thoại", hint: "Nói chuyện tự nhiên, nghe và trả lời" },
   { id: "listening", label: "Nghe hiểu", hint: "Nghe đoạn ngắn rồi trả lời bằng lời" },
 ] as const;
-export const DEFAULT_CONFIG = { lang: "en-US", mode: "ielts", level: "B1", output: "vi", topic: "" } as const;
-export const isEnglish = (lang: string) => lang.startsWith("en");
+export const DEFAULT_CONFIG = { lang: "en-US", mode: "guided", level: "B1", output: "vi", topic: "" } as const;

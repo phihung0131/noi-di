@@ -7,7 +7,7 @@ describe("parseModelElement", () => {
   it("đọc đủ các marker", () => {
     const t = parseModelElement(el(`
       <p>@@TRANSCRIPT</p><p>I am work at a company.</p>
-      <p>@@SCORE BAND 6.0 | FC 6 | LR 6.5 | GRA 5.5 | PR 6</p>
+      <p>@@SCORE NATIVE 62 | PRON 58 | FLU 66 | NAT 55 | GRA 70 | VOC 64</p><p>@@PRON</p><ul><li>work — /wɜːrk/ — đọc thành /wɔːk/</li></ul>
       <p>@@FEEDBACK</p><table><tr><th>Bạn nói</th><th>Sửa</th></tr><tr><td>I am work</td><td>I work</td></tr></table><ul><li>Tốt <strong>nhịp</strong></li></ul>
       <p>@@VOCAB</p><ul><li>work for — làm cho</li><li>quite demanding — khá áp lực</li></ul>
       <p>@@VERDICT pass</p>
@@ -17,8 +17,9 @@ describe("parseModelElement", () => {
       <p>@@SAMPLE</p><p>Yes, I do. It is rewarding.</p><p>@@SAMPLETR</p><p>Có. Nó rất đáng giá.</p>`));
     expect(t.empty).toBe(false);
     expect(t.q).toEqual({ n: "2", text: "Do you like your job?" });
-    expect(t.score?.map((s) => s.key)).toEqual(["BAND", "FC", "LR", "GRA", "PR"]);
+    expect(t.score?.map((s) => s.key)).toEqual(["NATIVE", "PRON", "FLU", "NAT", "GRA", "VOC"]);
     expect(t.verdict).toBe("pass");
+    expect(t.pron).toEqual(["work — /wɜːrk/ — đọc thành /wɔːk/"]);
     expect(t.vocab).toEqual(["work for — làm cho", "quite demanding — khá áp lực"]);
     expect(t.sample?.text).toBe("Yes, I do. It is rewarding.");
     expect(t.sample?.tr).toBe("Có. Nó rất đáng giá.");

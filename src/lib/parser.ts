@@ -33,7 +33,7 @@ export function topBlocks(turn: Element): Element[] {
 
 interface Section { name: string; args: string; paras: string[]; html: string[] }
 const MARKER = /^\s*@@([A-Z]+)(?:[ \t]+(.*))?$/;
-const KNOWN = new Set(["PART", "Q", "SAY", "TR", "ROMAN", "HINT", "SAMPLE", "SAMPLETR", "SAMPLEROMAN", "TRANSCRIPT", "SCORE", "FEEDBACK", "VOCAB", "VERDICT", "PREP"]);
+const KNOWN = new Set(["PART", "Q", "SAY", "TR", "ROMAN", "HINT", "SAMPLE", "SAMPLETR", "SAMPLEROMAN", "TRANSCRIPT", "SCORE", "FEEDBACK", "VOCAB", "PRON", "VERDICT", "PREP"]);
 
 const unquote = (t: string) => t.replace(/^["“”'‘’「」『』]+|["“”'‘’「」『』]+$/g, "").trim();
 const oneLine = (paras: string[]) => paras.join(" ").replace(/\s+/g, " ").trim();
@@ -94,13 +94,14 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
   const ts = get("TRANSCRIPT"); if (ts) out.transcript = oneLine(ts.paras);
   const fb = get("FEEDBACK"); if (fb) out.feedback = fb.html.join("");
   const vocab = get("VOCAB"); if (vocab) out.vocab = listItems(vocab, secBlocks.get(vocab));
+  const pron = get("PRON"); if (pron) out.pron = listItems(pron, secBlocks.get(pron));
   const part = get("PART"); if (part) out.part = part.args.replace(/\D/g, "") || undefined;
   const prep = get("PREP"); if (prep && /\d/.test(prep.args)) out.prep = parseInt(prep.args.replace(/\D/g, ""), 10);
   const vd = get("VERDICT"); if (vd) out.verdict = /pass/i.test(vd.args) ? "pass" : /retry/i.test(vd.args) ? "retry" : undefined;
   const sc = get("SCORE");
   if (sc) {
     const items: ScoreItem[] = [];
-    for (const m of sc.args.matchAll(/([A-Z]+)\s*[:=]?\s*([0-9]+(?:\.[0-9])?|[ABC][12])/g)) items.push({ key: m[1], value: m[2] });
+    for (const m of sc.args.matchAll(/([A-Z]+)\s*[:=]?\s*([0-9]+(?:\.[0-9])?)/g)) items.push({ key: m[1], value: m[2] });
     if (items.length) out.score = items;
   }
   // Model cũ / lệch giao thức: hiện nguyên văn như phần nhận xét.

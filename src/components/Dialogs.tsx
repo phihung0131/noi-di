@@ -2,7 +2,7 @@ import { useStore } from "@tanstack/react-store";
 import { Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { appStore, isLocked, setDialog, startNewSession, updatePrefs } from "@/lib/controller";
-import { isEnglish, LANGS, LEVELS, MODES } from "@/lib/langs";
+import { LANGS, LEVELS, MODES } from "@/lib/langs";
 import { onVoices, voicesFor } from "@/lib/speech";
 import { storage } from "@/lib/storage";
 import type { Mode, SessionConfig } from "@/lib/types";
@@ -22,9 +22,7 @@ export function NewSessionDialog() {
   useEffect(() => { if (open) void storage.lastConfig().then(setCfg); }, [open]);
   const c = cfg;
   const upd = (p: Partial<SessionConfig>) => setCfg((x) => {
-    const n = { ...x!, ...p };
-    if (!isEnglish(n.lang) && n.mode === "ielts") n.mode = "chat";
-    return n;
+    return { ...x!, ...p };
   });
   return (
     <Dialog open={open} onOpenChange={(o) => setDialog(o ? "new" : null)}>
@@ -35,9 +33,8 @@ export function NewSessionDialog() {
               <legend className="text-sm font-medium">Chế độ</legend>
               <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
                 {MODES.map((m) => {
-                  const disabled = m.id === "ielts" && !isEnglish(c.lang);
                   return (
-                    <button key={m.id} type="button" role="radio" aria-checked={c.mode === m.id} disabled={disabled} onClick={() => upd({ mode: m.id as Mode })}
+                    <button key={m.id} type="button" role="radio" aria-checked={c.mode === m.id} onClick={() => upd({ mode: m.id as Mode })}
                       className={cn("rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40", c.mode === m.id ? "border-primary bg-primary/10" : "border-border hover:bg-muted")}>
                       <div className="text-sm font-medium">{m.label}</div>
                       <div className="mt-0.5 text-xs text-muted-foreground">{m.hint}</div>

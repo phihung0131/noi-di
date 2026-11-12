@@ -8,17 +8,17 @@ import { Button } from "./ui/button";
 import { Tip } from "./ui/tooltip";
 
 function Trend({ turns }: { turns: unknown[] }) {
-  const bands = (turns as ModelTurn[]).filter((t) => t.role === "model").map((t) => t.score?.find((s) => s.key === "BAND")?.value).filter(Boolean).map(Number);
+  const bands = (turns as ModelTurn[]).filter((t) => t.role === "model").map((t) => t.score?.find((s) => s.key === "NATIVE")?.value).filter(Boolean).map(Number);
   if (!bands.length) return null;
   const last = bands[bands.length - 1], diff = bands.length > 1 ? last - bands[bands.length - 2] : 0;
-  const w = 56, h = 20, max = 9;
+  const w = 56, h = 20, max = 100;
   const pts = bands.slice(-8).map((b, i, a) => `${a.length === 1 ? w / 2 : (i / (a.length - 1)) * w},${h - (b / max) * h}`).join(" ");
   return (
-    <Tip label="Band ước lượng qua các lượt">
+    <Tip label="Mức giống người bản xứ qua các lượt">
       <div className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1">
         <svg width={w} height={h} aria-hidden="true" className="text-primary"><polyline points={pts} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" /></svg>
-        <span className="text-sm font-semibold tabular-nums">{last.toFixed(1)}</span>
-        {diff !== 0 && <span className={`text-xs tabular-nums ${diff > 0 ? "text-success" : "text-destructive"}`}>{diff > 0 ? "+" : ""}{diff.toFixed(1)}</span>}
+        <span className="text-sm font-semibold tabular-nums">{Math.round(last)}%</span>
+        {diff !== 0 && <span className={`text-xs tabular-nums ${diff > 0 ? "text-success" : "text-destructive"}`}>{diff > 0 ? "+" : ""}{Math.round(diff)}</span>}
       </div>
     </Tip>
   );

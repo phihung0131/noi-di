@@ -1,4 +1,4 @@
-export type Mode = "ielts" | "chat" | "listening";
+export type Mode = "guided" | "chat" | "listening";
 export type OutLang = "vi" | "en";
 
 export interface SessionConfig {
@@ -34,6 +34,7 @@ export interface ModelTurn {
   score?: ScoreItem[];
   feedback?: string;
   vocab?: string[];
+  pron?: string[];
   verdict?: "pass" | "retry";
   prep?: number;
   /** true khi chưa có nội dung nào (turn lazy chưa render hoặc đang chờ model) */
