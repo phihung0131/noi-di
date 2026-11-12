@@ -1,7 +1,7 @@
 import { useStore } from "@tanstack/react-store";
 import { BookMarked, ClipboardList, Lock, Plus, SlidersHorizontal, X } from "lucide-react";
 import { appStore, isLocked, setDialog, setOn, summarize } from "@/lib/controller";
-import { LANGS, MODES } from "@/lib/langs";
+import { langChip, MODES } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
 import { Logo } from "./Logo";
 import { Button } from "./ui/button";
@@ -29,7 +29,7 @@ export function Header() {
   const turns = useStore(appStore, (s) => s.turns);
   const generating = useStore(appStore, (s) => s.generating);
   const locked = useStore(appStore, (s) => isLocked(s));
-  const chips = [LANGS[session.lang]?.short ?? session.lang, MODES.find((m) => m.id === session.mode)?.label, session.level, session.output === "vi" ? "Giải thích tiếng Việt" : "Explain in English"];
+  const chips = [langChip(session.lang), MODES.find((m) => m.id === session.mode)?.label, session.level, session.output === "vi" ? "Giải thích tiếng Việt" : "Explain in English"];
   const canSummarize = turns.filter((t) => t.role === "user" && !t.hidden).length >= 1 && !generating;
 
   return (

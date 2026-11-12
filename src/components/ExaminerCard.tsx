@@ -2,6 +2,7 @@ import { useStore } from "@tanstack/react-store";
 import { ChevronDown, Eye, Languages, Lightbulb, MessageSquareQuote, Timer } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { appStore } from "@/lib/controller";
+import { speakable } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
 import { cn, fmtTime } from "@/lib/utils";
 import { Fold, SaveBtn, SpeakBtn, useLang } from "./bits";
@@ -35,7 +36,7 @@ function PhraseList({ title, items, idp, lang }: { title: string; items: string[
           return (
             <li key={i} className="flex items-center gap-2 px-3 py-2">
               <div className="min-w-0 flex-1"><span className="font-serif text-[15px] font-semibold">{phrase}</span>{rest.length > 0 && <span className="ml-2 text-sm text-muted-foreground">{rest.join(" · ")}</span>}</div>
-              <SpeakBtn id={`${idp}:${i}`} text={phrase} compact label={phrase} />
+              <SpeakBtn id={`${idp}:${i}`} text={speakable(phrase)} compact label={phrase} />
               <SaveBtn note={{ text: phrase, tr: rest.join(" · "), lang, kind: "vocab" }} />
             </li>
           );

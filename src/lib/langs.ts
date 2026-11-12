@@ -30,3 +30,22 @@ export const MODES = [
   { id: "listening", label: "Nghe hiểu", hint: "Nghe đoạn ngắn rồi trả lời bằng lời" },
 ] as const;
 export const DEFAULT_CONFIG = { lang: "en-US", mode: "guided", level: "B1", output: "vi", topic: "" } as const;
+
+/** Nhãn ngắn ở header, có vùng miền khi cùng ngôn ngữ có nhiều biến thể. */
+export function langChip(lang: string): string {
+  const l = LANGS[lang];
+  if (!l) return lang;
+  const region = l.name.match(/\(([^)]+)\)/)?.[1];
+  return lang.startsWith("en") || lang === "pt-BR" ? `${l.short} (${lang === "pt-BR" ? "Brazil" : region})` : l.short;
+}
+
+/** Phần chỉ để đọc thành tiếng: bỏ phiên âm/IPA/chú thích trong ngoặc, với CJK chỉ giữ cụm chữ gốc. */
+export function speakable(s: string): string {
+  let t = s.replace(/[\[(（【].*?[\])）】]/g, " ").replace(/\/[^/\s]+\//g, " ");
+  const cjk = /[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/;
+  if (cjk.test(t)) {
+    const m = t.match(/^[\s\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af、。，！？ー～]+/);
+    if (m) t = m[0];
+  }
+  return t.replace(/\s+/g, " ").trim();
+}
