@@ -321,6 +321,7 @@ async function onRoute() {
   } else if (get().on) void runPending();
 }
 
+let dupWarned = false;
 let quietSince = 0;
 let wasGenerating = false;
 let lastSnack = "";
@@ -391,7 +392,9 @@ function tick() {
     else if (gen) primed = true;
   } else if (!gen) {
     const last = turns[turns.length - 1] as ModelTurn | undefined;
-    if (last && last.role === "model" && !last.empty && !played.has(last.key)) {
+    // Chỉ đọc khi câu trả lời đã "lắng": hết stream và DOM không đổi trong 1,2s. Nếu không, đọc nửa chừng lúc chưa render xong rồi đọc lại lần nữa.
+    const settled = Date.now() - lastDomActivity() > 1200;
+    if (last && last.role === "model" && !last.empty && settled && !played.has(last.key)) {
       played.add(last.key);
       if (last.score) void countAnswer();
       if (get().prefs.autoPlay && (last.q || last.say)) playLatest();
@@ -445,6 +448,8 @@ export async function boot() {
   set({ prefs, ready: true });
   await setOn(on);
   listenPopup();
+  // Hai bản Nói Đi cùng chạy (vd. Chrome Web Store + bản tải thủ công) sẽ cùng đọc, cùng ghi prompt và đè giao diện lên nhau.
+  for (const d of [1500, 5000]) setTimeout(() => { if (document.querySelectorAll("#noidi-host").length > 1 && !dupWarned) { dupWarned = true; toast("Phát hiện 2 bản Nói Đi cùng chạy (Chrome Web Store và bản tải thủ công). Hãy tắt bớt một bản trong chrome://extensions, nếu không sẽ bị đọc hai lần và lệch nội dung."); } }, d);
   let n = 0;
   setInterval(() => { n++; if (get().generating || n % 3 === 0) tick(); }, 200);
 

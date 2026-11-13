@@ -36,7 +36,6 @@ export function DonateView({ open }: { open: (url: string) => void }) {
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-muted-foreground">
         Nói Đi miễn phí và mã nguồn mở. Nếu nó giúp bạn nói tự tin hơn, một ly cà phê sẽ cho mình thêm thời gian để làm tiếp: thêm ngôn ngữ, chấm điểm sát hơn, sửa lỗi nhanh hơn.
-        Không bắt buộc đâu, bạn cứ dùng bình thường nhé.
       </p>
       <ul className="space-y-1.5 text-sm">
         {["Thêm ngôn ngữ, giọng đọc và chế độ luyện mới", "Chấm điểm phát âm sát giọng bản xứ hơn", "Sửa lỗi nhanh khi AI Studio đổi giao diện"].map((t) => (
@@ -55,8 +54,7 @@ export function DonateView({ open }: { open: (url: string) => void }) {
           </Button>
         </div>
       </div>
-      <p className="text-center text-xs text-muted-foreground">Quét bằng app ngân hàng bất kỳ (VietQR). Một ly cà phê khoảng 25.000đ, bao nhiêu cũng là niềm vui. Cảm ơn bạn rất nhiều!</p>
-      <div className="border-t border-border pt-3">
+            <div className="border-t border-border pt-3">
         <p className="mb-2 text-xs text-muted-foreground">Không tiện chuyển khoản? Những việc này cũng giúp ích rất nhiều:</p>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => open(SUPPORT.repo)}><Star size={14} />Gắn sao trên GitHub</Button>

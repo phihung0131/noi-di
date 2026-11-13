@@ -52,7 +52,7 @@ export function Header() {
           </Button>
         </Tip>
         <Trend turns={turns} />
-        <Tip label="Đồng bộ lại: nạp lại toàn bộ cuộc trò chuyện từ AI Studio"><Button variant="ghost" size="icon" aria-label="Đồng bộ lại với AI Studio" disabled={syncing} onClick={() => void resync()}><RefreshCw size={17} className={syncing ? "animate-spin" : ""} /></Button></Tip>
+        <Tip label="Đồng bộ lại: nạp lại toàn bộ cuộc trò chuyện từ AI Studio, không cần tải lại trang"><Button variant="outline" size="sm" aria-label="Đồng bộ lại với AI Studio" disabled={syncing} onClick={() => void resync()}><RefreshCw size={15} className={syncing ? "animate-spin" : ""} /><span className="hidden md:inline">{syncing ? "Đang đồng bộ" : "Đồng bộ"}</span></Button></Tip>
         {canSummarize && <Tip label="Tổng kết buổi: điểm mạnh, lỗi lặp lại, việc cần luyện"><Button variant="ghost" size="icon" aria-label="Tổng kết buổi" onClick={() => void summarize()}><ClipboardList size={18} /></Button></Tip>}
         <Tip label="Nói Đi miễn phí. Mời tác giả ly cà phê để mình làm tiếp"><Button variant="outline" size="sm" className="border-accent/50 bg-accent/10 hover:bg-accent/20" onClick={() => setDialog("donate")} aria-label="Mời tác giả ly cà phê"><Coffee size={15} className="text-accent" /><span className="hidden lg:inline">Ủng hộ</span></Button></Tip>
         <Tip label="Sổ từ vựng"><Button variant="ghost" size="icon" aria-label="Sổ từ vựng" onClick={() => setDialog("notebook")}><BookMarked size={18} /></Button></Tip>
