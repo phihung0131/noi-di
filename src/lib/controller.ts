@@ -1,6 +1,7 @@
 import { Store } from "@tanstack/store";
-import { applyPrompt, chatId, hydrate, isGenerating, isHydrating, isNewChatPage, currentModelId, health, lastDomActivity, native, snackbarText, switchToLighterModel, resetChatCache, selectModel, sendText, snapshot } from "./bridge";
+import { applyPrompt, chatId, hydrate, liveNow, refreshTail, isGenerating, isHydrating, isNewChatPage, currentModelId, health, lastDomActivity, native, snackbarText, switchToLighterModel, resetChatCache, selectModel, sendText, snapshot } from "./bridge";
 import { baseDiag } from "./diag";
+import type { LiveSection } from "./parser";
 import { DEFAULT_CONFIG } from "./langs";
 import { mic } from "./recorder";
 import { speak, speechStore, stopSpeaking } from "./speech";
@@ -18,6 +19,10 @@ export interface AppState {
   /** Giám khảo không trả lời (lượt rỗng / không có phản hồi) sau khi đã gửi */
   stalled: boolean;
   hydrating: boolean;
+  /** Phần model đang stream (chữ thuần), hiện trực tiếp rồi mới dựng giao diện khi xong */
+  live: LiveSection[];
+  /** Đang đồng bộ lại với AI Studio */
+  syncing: boolean;
   chatId: string | null;
   session: SessionConfig;
   prefs: Prefs;
@@ -36,7 +41,7 @@ export interface AppState {
 }
 
 export const appStore = new Store<AppState>({
-  on: false, ready: false, turns: [], generating: false, stalled: false, hydrating: false, chatId: null,
+  on: false, ready: false, turns: [], generating: false, stalled: false, hydrating: false, live: [], syncing: false, chatId: null,
   session: { ...DEFAULT_CONFIG } as SessionConfig, prefs: DEFAULT_PREFS,
   rec: { state: "idle", startedAt: 0, ms: 0, url: null, peaks: [] },
   sent: {}, playingRec: null, toast: null, dialog: null, model: "", reportPreset: null, capturing: false, nudge: null,
@@ -283,6 +288,22 @@ export async function startNewSession(cfg: SessionConfig) {
   else location.href = "https://aistudio.google.com/prompts/new_chat";
 }
 
+/** Đồng bộ lại hoàn toàn với AI Studio: bỏ cache, nạp lại toàn bộ lượt từ trang gốc. */
+export async function resync() {
+  if (get().syncing) return;
+  set({ syncing: true });
+  try {
+    resetChatCache(); hydrateKey = "";
+    set({ turns: [], live: [] });
+    tick();
+    await hydrate(() => tick());
+    refreshTail(3); tick();
+    toast("Đã đồng bộ lại với AI Studio.");
+  } catch (e) {
+    toast(`Không đồng bộ được: ${e instanceof Error ? e.message : e}`);
+  } finally { set({ syncing: false }); }
+}
+
 /* ---------- vòng lặp chính ---------- */
 let route = "";
 let primed = false;
@@ -301,6 +322,7 @@ async function onRoute() {
 }
 
 let quietSince = 0;
+let wasGenerating = false;
 let lastSnack = "";
 let healthTick = 0;
 const healthWarned = new Set<string>();
@@ -334,6 +356,11 @@ function tick() {
   const stalled = stallCheck(turns, gen);
   const model = currentModelId();
   if (model && model !== get().model) set({ model });
+  // Stream trực tiếp: hiện chữ thô đang chạy; hết stream thì đọc lại phần đuôi cho chuẩn rồi mới dựng giao diện.
+  const live = gen ? liveNow() : [];
+  if (JSON.stringify(live) !== JSON.stringify(get().live)) set({ live });
+  if (wasGenerating && !gen) { for (const d of [400, 1500, 3500]) setTimeout(() => { if (!isGenerating()) { refreshTail(3); tick(); } }, d); }
+  wasGenerating = gen;
   const same = turns.length === get().turns.length && turns.every((t, i) => t === get().turns[i]);
   if (!same || gen !== get().generating || stalled !== get().stalled || isHydrating() !== get().hydrating) set({ turns: same ? get().turns : turns, generating: gen, stalled, hydrating: isHydrating() });
 
@@ -419,7 +446,7 @@ export async function boot() {
   await setOn(on);
   listenPopup();
   let n = 0;
-  setInterval(() => { n++; if (get().generating || n % 3 === 0) tick(); }, 350);
+  setInterval(() => { n++; if (get().generating || n % 3 === 0) tick(); }, 200);
 
   window.addEventListener("keydown", (e) => {
     if (!get().on || !e.altKey) return;

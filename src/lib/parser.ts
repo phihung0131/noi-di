@@ -36,7 +36,7 @@ export function topBlocks(turn: Element): Element[] {
 
 interface Section { name: string; args: string; paras: string[]; html: string[] }
 const MARKER = /^\s*@@([A-Z]+)(?:[ \t]+(.*))?$/;
-const KNOWN = new Set(["PART", "Q", "SAY", "TR", "ROMAN", "HINT", "SAMPLE", "SAMPLETR", "SAMPLEROMAN", "TRANSCRIPT", "SCORE", "FEEDBACK", "VOCAB", "PRON", "VERDICT", "PREP"]);
+const KNOWN = new Set(["PART", "Q", "SAY", "TR", "ROMAN", "HINT", "SAMPLE", "SAMPLETR", "SAMPLEROMAN", "TRANSCRIPT", "SCORE", "FEEDBACK", "VOCAB", "PRON", "VERDICT", "PREP", "FIXED", "BETTER", "DRILL"]);
 
 /** Tham số có thể nằm ngay trên dòng marker hoặc ở dòng kế tiếp (AI Studio gộp chung một đoạn). */
 const argText = (s: Section) => `${s.args} ${s.paras.join(" ")}`.trim();
@@ -98,6 +98,9 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
   const sample = get("SAMPLE");
   if (sample) out.sample = { text: unquote(oneLine(sample.paras)), tr: oneLine(get("SAMPLETR")?.paras ?? []), roman: oneLine(get("SAMPLEROMAN")?.paras ?? []) };
   const ts = get("TRANSCRIPT"); if (ts) out.transcript = oneLine(ts.paras);
+  const fixed = get("FIXED"); if (fixed) out.fixed = unquote(oneLine(fixed.paras));
+  const better = get("BETTER"); if (better) out.better = unquote(oneLine(better.paras));
+  const drill = get("DRILL"); if (drill) out.drill = drill.html.join("");
   const fb = get("FEEDBACK"); if (fb) out.feedback = fb.html.join("");
   const vocab = get("VOCAB"); if (vocab) out.vocab = listItems(vocab, secBlocks.get(vocab));
   const pron = get("PRON"); if (pron) out.pron = listItems(pron, secBlocks.get(pron));
@@ -112,5 +115,34 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
   }
   // Model cũ / lệch giao thức: hiện nguyên văn như phần nhận xét.
   if (!secs.length && pre.length) out.feedback = pre.join("");
+  return out;
+}
+
+const LABELS: Record<string, string> = {
+  TRANSCRIPT: "Bạn nói", SCORE: "Điểm", FIXED: "Bản sửa đầy đủ", BETTER: "Người bản xứ sẽ nói", FEEDBACK: "Nhận xét", PRON: "Phát âm", VOCAB: "Nói tự nhiên hơn",
+  DRILL: "Bài tập", VERDICT: "Kết luận", Q: "Câu hỏi", TR: "Dịch", SAY: "Giám khảo nói", HINT: "Gợi ý", SAMPLE: "Câu mẫu", SAMPLETR: "Dịch câu mẫu", ROMAN: "Phiên âm", SAMPLEROMAN: "Phiên âm câu mẫu", PREP: "Chuẩn bị", PART: "Phần",
+};
+export interface LiveSection { label: string; text: string }
+
+/** Nội dung model đang stream, dạng chữ thuần theo từng mục: để hiện trực tiếp, chưa dựng giao diện. */
+export function liveSections(turn: Element): LiveSection[] {
+  const out: LiveSection[] = [];
+  let cur: LiveSection | null = null;
+  const push = (line: string) => { if (!line.trim()) return; if (!cur) { cur = { label: "", text: "" }; out.push(cur); } cur.text += (cur.text ? "\n" : "") + line.trim(); };
+  for (const b of topBlocks(turn)) {
+    if (b.tagName === "TABLE") {
+      b.querySelectorAll("tr").forEach((tr) => push(Array.from(tr.children).map((c) => (c.textContent ?? "").replace(/\s+/g, " ").trim()).join("  |  ")));
+      continue;
+    }
+    if (b.tagName === "UL" || b.tagName === "OL") { b.querySelectorAll("li").forEach((li) => push("• " + (li.textContent ?? "").replace(/\s+/g, " ").trim())); continue; }
+    for (const line of textOf(b).split("\n")) {
+      const m = MARKER.exec(line);
+      if (m) {
+        if (KNOWN.has(m[1])) { cur = { label: LABELS[m[1]] ?? m[1], text: "" }; out.push(cur); if (m[2]) push(m[2]); }
+        continue;
+      }
+      push(line.replace(/\s+/g, " "));
+    }
+  }
   return out;
 }

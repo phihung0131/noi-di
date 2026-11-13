@@ -1,4 +1,4 @@
-import { parseModelElement } from "./parser";
+import { liveSections, parseModelElement, type LiveSection } from "./parser";
 import { pickLighter } from "./errors";
 import { buildPrompt } from "./prompt";
 import type { SessionConfig, Turn } from "./types";
@@ -71,6 +71,19 @@ function mergeStreaming(old: Turn, nu: Turn): Turn {
   if (old.say && nu.say && old.say.length > nu.say.length && old.say.startsWith(nu.say)) out.say = old.say;
   out.empty = false;
   return out as unknown as Turn;
+}
+
+/** Bỏ chữ ký của vài lượt cuối để lần quét kế tiếp đọc lại hoàn toàn (AI Studio hay chốt DOM trễ sau khi hết stream). */
+export function refreshTail(n = 3) {
+  const len = turnEls().length;
+  for (let k = Math.max(0, len - n); k < len; k++) { sigs.delete(k); cache.delete(k); }
+}
+
+/** Phần model đang stream (chữ thuần theo mục) của lượt cuối. */
+export function liveNow(): LiveSection[] {
+  const els = turnEls();
+  const el = els[els.length - 1];
+  return el && isModelTurn(el) ? liveSections(el) : [];
 }
 
 export function snapshot(): Turn[] {

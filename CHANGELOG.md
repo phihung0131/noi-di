@@ -1,5 +1,13 @@
 # Nhật ký thay đổi
 
+## 1.1.0
+
+- **Prompt giáo viên thực thụ:** chấm điểm theo bảng trừ điểm bám bằng chứng, có giới hạn và kiểm tra nhất quán giữa các lượt; thẳng thắn, không khen xã giao.
+- **Câu sửa đầy đủ:** sau mỗi lượt có bản sửa toàn bộ câu trả lời, bản người bản xứ sẽ nói (nghe, nghe chậm, lưu sổ), bảng tối đa 8 lỗi (loại, bạn nói, sửa thành, vì sao) và một bài tập sửa lỗi quan trọng nhất.
+- **Stream trực tiếp:** hiện chữ giám khảo đang trả lời theo thời gian thực, xong mới dựng lại giao diện đầy đủ và đọc lại phần đuôi để khỏi lệch với AI Studio.
+- **Nút đồng bộ lại** trên thanh đầu: nạp lại toàn bộ cuộc trò chuyện từ AI Studio khi cần.
+- **Báo sự cố qua Google Form** điền sẵn (loại, mô tả, thông tin kỹ thuật), có câu đính kèm ảnh chụp màn hình. Bỏ gửi qua thư.
+
 ## 1.0.0 (bản công khai đầu tiên)
 
 - Giao diện luyện nói toàn màn hình thay khung chat của AI Studio (React, Tailwind, Radix, TanStack, Shadow DOM).

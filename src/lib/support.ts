@@ -1,6 +1,5 @@
 /** Thông tin liên hệ / ủng hộ của tác giả (do tác giả cung cấp để đặt trong extension). */
 export const SUPPORT = {
-  email: "phihung0131@gmail.com",
   repo: "https://github.com/phihung0131/noi-di",
   bank: { owner: "HO NGUYEN PHI HUNG", name: "TPBank", number: "10002751087", display: "1000 2751 087" },
 };
@@ -24,30 +23,30 @@ export function formatDiag(d: Diag): string {
     .join("\n");
 }
 
-/** Soạn sẵn nội dung thư: người dùng chỉ cần bổ sung mô tả. */
+/** Form báo sự cố (Google Forms, ghi vào bảng tính của tác giả). Ô ảnh chụp là câu tải tệp, người dùng tự đính kèm trong form. */
+export const REPORT_FORM = {
+  url: "https://docs.google.com/forms/d/e/1FAIpQLSe5zMviFmKyxofU32NRZQBy3TKzbIxYpe6NSMjDNYrmWR1jOg/viewform",
+  entry: { category: "entry.1535044484", note: "entry.1865843056", diag: "entry.1112845089" },
+};
+
+/** Nội dung báo cáo: người dùng chỉ cần bổ sung mô tả. */
 export function buildReport(o: { category: CategoryId; note: string; diag?: Diag }) {
   const label = CATEGORIES.find((c) => c.id === o.category)?.label ?? "Khác";
-  const first = o.note.trim().split("\n")[0].slice(0, 60);
-  const subject = `[Nói Đi] Báo sự cố: ${label}${first ? ` — ${first}` : ""}`;
-  const body = [
-    "Chào Hùng, mình gặp sự cố khi dùng Nói Đi.",
-    "",
-    `Loại sự cố: ${label}`,
-    "",
-    "Mô tả:",
-    o.note.trim() || "(mình sẽ bổ sung: đang làm gì, điều gì xảy ra, mong đợi gì)",
-    "",
-    "Ảnh chụp màn hình (nếu có): dán vào đây bằng Ctrl+V.",
-    "",
-    ...(o.diag ? ["--- Thông tin kỹ thuật (tự động, không có nội dung hội thoại) ---", formatDiag(o.diag)] : []),
-  ].join("\n");
-  return { subject, body };
+  return {
+    category: label,
+    note: o.note.trim() || "(mình sẽ bổ sung: đang làm gì, điều gì xảy ra, mong đợi gì)",
+    diag: o.diag ? formatDiag(o.diag) : "",
+  };
 }
 
-export const gmailUrl = (subject: string, body: string) =>
-  `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(SUPPORT.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-export const mailtoUrl = (subject: string, body: string) =>
-  `mailto:${SUPPORT.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+/** Link form đã điền sẵn loại sự cố, mô tả và thông tin kỹ thuật. */
+export function reportFormUrl(r: { category: string; note: string; diag: string }): string {
+  const q = new URLSearchParams({ usp: "pp_url" });
+  q.set(REPORT_FORM.entry.category, r.category);
+  q.set(REPORT_FORM.entry.note, r.note);
+  if (r.diag) q.set(REPORT_FORM.entry.diag, r.diag);
+  return `${REPORT_FORM.url}?${q.toString()}`;
+}
 
 /** Chụp tab đang xem (qua service worker). */
 export async function captureTab(): Promise<string> {
@@ -56,16 +55,6 @@ export async function captureTab(): Promise<string> {
   return r.dataUrl;
 }
 
-/** mailto/Gmail không đính kèm file được, nên ảnh được chép vào clipboard để người dùng dán vào thư. */
-export async function copyImage(dataUrl: string): Promise<boolean> {
-  const attempt = (async () => {
-    const blob = await (await fetch(dataUrl)).blob();
-    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-    return true;
-  })().catch(() => false);
-  // clipboard có thể treo chờ quyền/tiêu điểm: không để chặn việc mở thư
-  return Promise.race([attempt, new Promise<boolean>((r) => setTimeout(() => r(false), 1500))]);
-}
 export function downloadImage(dataUrl: string) {
   const a = document.createElement("a");
   a.href = dataUrl;

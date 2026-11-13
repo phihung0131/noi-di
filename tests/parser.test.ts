@@ -60,3 +60,24 @@ describe("parseModelElement", () => {
     expect(t.feedback).toContain("Chào bạn");
   });
 });
+
+describe("bản sửa đầy đủ và stream trực tiếp", () => {
+  const html = `<p>@@TRANSCRIPT</p><p>I go school yesterday and I very like it.</p>
+    <p>@@FIXED</p><p>I went to school yesterday and I really liked it.</p>
+    <p>@@BETTER</p><p>I headed to school yesterday, and honestly, I loved it.</p>
+    <p>@@FEEDBACK</p><table><tr><th>Loại</th><th>Bạn nói</th><th>Sửa thành</th><th>Vì sao</th></tr><tr><td>Ngữ pháp</td><td>I go school</td><td>I went to school</td><td>quá khứ + giới từ</td></tr></table>
+    <p>@@DRILL</p><p>I went to school yesterday.</p><p>Nhấn vào went.</p>`;
+  it("đọc FIXED, BETTER, DRILL", () => {
+    const t = parseModelElement(el(html));
+    expect(t.fixed).toBe("I went to school yesterday and I really liked it.");
+    expect(t.better).toBe("I headed to school yesterday, and honestly, I loved it.");
+    expect(t.drill).toContain("Nhấn vào went");
+    expect(t.feedback).toContain("<table>");
+  });
+  it("liveSections tách theo mục, bảng thành dòng chữ", async () => {
+    const { liveSections } = await import("@/lib/parser");
+    const s = liveSections(el(html));
+    expect(s.map((x) => x.label)).toEqual(["Bạn nói", "Bản sửa đầy đủ", "Người bản xứ sẽ nói", "Nhận xét", "Bài tập"]);
+    expect(s[3].text).toContain("Ngữ pháp  |  I go school");
+  });
+});

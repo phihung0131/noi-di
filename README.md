@@ -23,7 +23,7 @@ Nói Đi là tiện ích Chrome (Manifest V3) chạy trên [Google AI Studio](ht
 - **8 ngôn ngữ:** English (Mỹ, Anh), 日本語, 한국어, 中文, Deutsch, Français, Español, Português (Brasil). Có phiên âm (romaji, romanization, pinyin) cho ngôn ngữ không dùng chữ Latin.
 - **3 chế độ:** *Hỏi đáp có chấm*, *Hội thoại* tự nhiên, *Nghe hiểu* (nghe đoạn ngắn rồi trả lời bằng lời). Trình độ A2 đến C1.
 - **Điểm trên 100, "giống người bản xứ":** gồm phát âm và ngữ điệu, trôi chảy, tự nhiên, ngữ pháp, từ vựng. Model nghe trực tiếp audio của bạn, không chỉ đọc transcript.
-- **Nhận xét cụ thể:** transcript, bảng "Bạn nói / Người bản xứ sẽ nói / Vì sao", từ phát âm sai kèm cách đọc, cách nói tự nhiên hơn.
+- **Nhận xét cụ thể:** transcript, **bản sửa đầy đủ** câu trả lời của bạn, **bản người bản xứ sẽ nói**, bảng lỗi (loại, bạn nói, sửa thành, vì sao), từ phát âm sai kèm cách đọc và một bài tập sửa lỗi.
 - **Tổng kết buổi** và biểu đồ điểm qua các lượt.
 
 **Nghe và ghi âm tiện tay**
@@ -68,14 +68,14 @@ Nói Đi không gọi API riêng. Nó **điều khiển giao diện AI Studio đ
 - **Giao thức marker.** Prompt hệ thống buộc model trả lời bằng các mục đánh dấu (`@@Q`, `@@SAMPLE`, `@@SCORE`, `@@FEEDBACK`…). Parser đọc theo đó nên giao diện luôn dựng đúng, không đoán theo emoji hay định dạng.
 - **Chịu được trang đổi giao diện.** Mọi chỗ bám vào AI Studio nằm trong một file (`src/lib/selectors.ts`), mỗi thứ có nhiều cách dò (selector dự phòng, dò theo nhãn/chữ) và có kiểm tra sức khoẻ báo khi không tìm thấy.
 - **Nạp đủ lịch sử.** AI Studio chỉ render các lượt đang hiện trên màn hình; Nói Đi cuộn ngầm để nạp đủ rồi lưu cache.
-- **Stream mượt.** Mục model đang viết dở (bảng, điểm) chưa hiện cho tới khi đủ, nên không nhấp nháy.
+- **Stream trực tiếp.** Trong lúc giám khảo trả lời, chữ hiện theo thời gian thực; xong mới dựng lại giao diện đầy đủ và đọc lại phần đuôi cho khớp AI Studio. Nút đồng bộ ở thanh đầu nạp lại toàn bộ khi cần.
 
 ## Quyền riêng tư
 
 - Dữ liệu (cài đặt, sổ từ vựng, mốc luyện tập) **chỉ lưu trong trình duyệt** bằng `chrome.storage.local`. Không có máy chủ, không thống kê, không theo dõi.
 - Giọng nói được gửi tới Google **qua AI Studio, dưới tài khoản của chính bạn**, giống như khi bạn tự ghi âm trên trang đó. Nói Đi không gửi đi đâu khác.
 - Bản nghe lại chỉ nằm trong bộ nhớ của tab và mất khi tải lại trang.
-- Ảnh chụp màn hình chỉ được chụp khi bạn bấm, chỉ chép vào clipboard hoặc tải về máy; báo sự cố chỉ **mở thư soạn sẵn** để bạn kiểm tra rồi tự gửi.
+- Ảnh chụp màn hình chỉ được chụp khi bạn bấm và tải về máy. Báo sự cố chỉ **mở Google Form đã điền sẵn** để bạn kiểm tra rồi tự bấm Gửi; ảnh (nếu có) do bạn tự đính kèm trong form.
 
 Chi tiết: [docs/PRIVACY.md](docs/PRIVACY.md).
 

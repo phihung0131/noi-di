@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Nói Đi – Luyện nói với AI Studio",
   "short_name": "Nói Đi",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Biến Google AI Studio thành phòng luyện nói: giám khảo AI hỏi, bạn nói, chấm điểm mức giống người bản xứ. 8 ngôn ngữ.",
   "homepage_url": "https://github.com/phihung0131/noi-di",
   "minimum_chrome_version": "111",

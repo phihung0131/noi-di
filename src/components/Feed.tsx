@@ -5,7 +5,7 @@ import { appStore, dismissNudge, isLocked, openReport, quickLabel, retryReply, s
 import { SupportCard } from "./Support";
 import { Logo } from "./Logo";
 import { Button } from "./ui/button";
-import { ExaminerCard } from "./ExaminerCard";
+import { ExaminerCard, LivePanel } from "./ExaminerCard";
 import { UserCard } from "./UserCard";
 
 export function Feed() {
@@ -51,6 +51,7 @@ export function Feed() {
         {visible.map((t) => {
           if (t.role === "user") return <UserCard key={t.key} turn={t} />;
           const idx = turns.indexOf(t);
+          if (generating && idx === turns.length - 1) return <LivePanel key={t.key} />;
           return <ExaminerCard key={t.key} turn={t} latest={idx === lastModel} streaming={generating && idx === turns.length - 1} answered={idx < turns.length - 1} />;
         })}
         {summaryDone && !stalled && (

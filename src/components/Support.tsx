@@ -1,6 +1,6 @@
-import { Camera, Check, Coffee, Copy, Download, ExternalLink, Mail, Star, Trash2 } from "lucide-react";
+import { Camera, Check, Coffee, Copy, Download, FileText, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { buildReport, CATEGORIES, assetUrl, captureTab, copyImage, downloadImage, gmailUrl, mailtoUrl, SUPPORT, type CategoryId, type Diag } from "@/lib/support";
+import { buildReport, CATEGORIES, assetUrl, captureTab, downloadImage, reportFormUrl, SUPPORT, type CategoryId, type Diag } from "@/lib/support";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 
@@ -101,25 +101,20 @@ export function ReportView({ getDiag, open, captureModes, prepareCapture, preset
 
   const build = async () => buildReport({ category, note, diag: withDiag ? await getDiag() : undefined });
 
-  const send = async (kind: "gmail" | "mailto") => {
+  const send = async () => {
     setBusy(true);
     try {
-      const { subject, body } = await build();
+      const r = await build();
       let hint = "";
-      if (shot) hint = (await copyImage(shot)) ? " Ảnh chụp đã được chép: bấm Ctrl+V trong thư để dán." : " Chưa chép được ảnh, hãy dùng nút Tải ảnh rồi đính kèm.";
-      open(kind === "gmail" ? gmailUrl(subject, body) : mailtoUrl(subject, body));
-      setMsg(`Đã mở thư soạn sẵn tới tác giả, bạn kiểm tra rồi bấm Gửi.${hint}`);
+      if (shot) { downloadImage(shot); hint = " Ảnh chụp đã được tải về máy: trong form, bấm “Thêm tệp” ở câu ảnh chụp màn hình để đính kèm."; }
+      open(reportFormUrl(r));
+      setMsg(`Đã mở form báo sự cố, đã điền sẵn nội dung. Kiểm tra rồi bấm Gửi ở cuối form.${hint}`);
     } finally { setBusy(false); }
-  };
-
-  const copyText = async () => {
-    const { subject, body } = await build();
-    try { await navigator.clipboard.writeText(`${subject}\n\n${body}`); setMsg(`Đã chép nội dung. Gửi tới ${SUPPORT.email}.`); } catch { setMsg("Không chép được, hãy chọn nút khác."); }
   };
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">Chọn loại sự cố và mô tả thêm nếu cần. Mình sẽ soạn sẵn thư gửi tới tác giả, bạn chỉ việc kiểm tra rồi gửi.</p>
+      <p className="text-sm text-muted-foreground">Chọn loại sự cố và mô tả thêm nếu cần. Mình điền sẵn form báo sự cố gửi tới tác giả, bạn chỉ việc kiểm tra rồi bấm Gửi.</p>
       <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Loại sự cố">
         {CATEGORIES.map((c) => (
           <button key={c.id} type="button" role="radio" aria-checked={category === c.id} onClick={() => setCategory(c.id)}
@@ -155,22 +150,20 @@ export function ReportView({ getDiag, open, captureModes, prepareCapture, preset
             </div>
           </div>
         )}
-        <p className="text-xs text-muted-foreground">Ảnh được chép vào clipboard khi bạn mở thư; trong thư chỉ cần bấm Ctrl+V để dán.</p>
+        <p className="text-xs text-muted-foreground">Khi gửi, ảnh được tải về máy; trong form bạn bấm “Thêm tệp” để đính kèm (form yêu cầu đăng nhập Google, bạn đang dùng AI Studio nên đã có sẵn).</p>
       </div>
 
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" checked={withDiag} onChange={(e) => setWithDiag(e.target.checked)} className="mt-1 h-4 w-4 accent-[hsl(var(--primary))]" />
         <span>Kèm thông tin kỹ thuật (phiên bản, trình duyệt, model, trạng thái). <span className="text-muted-foreground">Không gửi nội dung hội thoại của bạn.</span></span>
       </label>
-      <button type="button" className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground" onClick={async () => setPreview(preview === null ? (await build()).body : null)}>
-        {preview === null ? "Xem nội dung sẽ gửi" : "Ẩn nội dung"}
+      <button type="button" className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground" onClick={async () => setPreview(preview === null ? await (async () => { const r = await build(); return `Loại sự cố: ${r.category}\n\nMô tả:\n${r.note}${r.diag ? `\n\nThông tin kỹ thuật:\n${r.diag}` : ""}`; })() : null)}>
+        {preview === null ? "Xem nội dung sẽ điền vào form" : "Ẩn nội dung"}
       </button>
       {preview !== null && <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-muted/60 p-3 text-xs">{preview}</pre>}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={() => void send("gmail")} disabled={busy}><Mail size={16} />Mở Gmail để gửi</Button>
-        <Button variant="outline" onClick={() => void send("mailto")} disabled={busy}><ExternalLink size={14} />App mail khác</Button>
-        <Button variant="ghost" size="sm" onClick={() => void copyText()}><Copy size={14} />Chép nội dung</Button>
+        <Button onClick={() => void send()} disabled={busy}><FileText size={16} />Mở form để gửi</Button>
       </div>
       {msg && <p role="status" className="rounded-lg bg-primary/10 p-3 text-sm">{msg}</p>}
     </div>

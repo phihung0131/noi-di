@@ -31,6 +31,11 @@ export interface ModelTurn {
   hint?: string;
   sample?: { text: string; tr: string; roman: string };
   transcript?: string;
+  /** Bản sửa đầy đủ câu trả lời của học viên */
+  fixed?: string;
+  /** Cách người bản xứ sẽ nói */
+  better?: string;
+  drill?: string;
   score?: ScoreItem[];
   feedback?: string;
   vocab?: string[];

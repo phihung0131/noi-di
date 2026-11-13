@@ -1,6 +1,6 @@
 # Chính sách quyền riêng tư của Nói Đi
 
-Cập nhật: 12/11/2026
+Cập nhật: 13/11/2026
 
 Nói Đi là tiện ích Chrome mã nguồn mở chạy trên `aistudio.google.com`. Tài liệu này mô tả tiện ích xử lý dữ liệu của bạn như thế nào.
 
@@ -32,8 +32,10 @@ Bạn có thể xoá bằng cách gỡ tiện ích hoặc xoá dữ liệu của
 
 ## Chụp màn hình và báo sự cố
 
-- Ảnh chụp màn hình **chỉ được chụp khi bạn bấm nút**, hiển thị để bạn xem, rồi chép vào clipboard hoặc tải về máy theo lựa chọn của bạn. Tiện ích không tự tải ảnh lên đâu cả.
-- Nút "Báo sự cố" **chỉ mở thư soạn sẵn** (Gmail hoặc ứng dụng mail của bạn). Bạn xem được toàn bộ nội dung và tự bấm Gửi. Thư gồm loại sự cố, mô tả của bạn và thông tin kỹ thuật (phiên bản, trình duyệt, model, trạng thái, quyền micro, lỗi gần nhất). Bạn có thể tắt phần thông tin kỹ thuật. **Không** có nội dung hội thoại hay mã định danh cuộc trò chuyện.
+- Ảnh chụp màn hình **chỉ được chụp khi bạn bấm nút**, hiển thị để bạn xem rồi tải về máy. Tiện ích không tự tải ảnh lên đâu cả.
+- Nút "Báo sự cố" **chỉ mở một Google Form đã điền sẵn** (loại sự cố, mô tả của bạn, thông tin kỹ thuật). Bạn xem được toàn bộ nội dung và tự bấm Gửi. Thông tin kỹ thuật gồm phiên bản, trình duyệt, model, trạng thái, quyền micro, lỗi gần nhất; bạn có thể tắt phần này. **Không** có nội dung hội thoại hay mã định danh cuộc trò chuyện.
+- Khi bạn bấm Gửi trong form, nội dung (và ảnh nếu bạn tự đính kèm) được Google Forms lưu vào bảng tính và Drive của tác giả, dưới tài khoản Google đang đăng nhập của bạn (form yêu cầu đăng nhập để nhận ảnh). Tác giả chỉ dùng để sửa lỗi, không chia sẻ cho bên thứ ba.
+- Form góp ý trên mạng xã hội (nếu có) là kênh riêng, thông tin trong đó do bạn tự điền.
 
 ## Quyền của tiện ích
 

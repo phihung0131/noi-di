@@ -1,5 +1,5 @@
 import { useStore } from "@tanstack/react-store";
-import { AlertTriangle, ChevronDown, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
+import { AlertTriangle, ChevronDown, Dumbbell, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { appStore, openReport, retryReply, setDialog, skipQuestion, switchModelAndRetry } from "@/lib/controller";
 import { classifyError } from "@/lib/errors";
@@ -47,6 +47,22 @@ function PhraseList({ title, items, idp, lang }: { title: string; items: string[
   );
 }
 
+function Rewrite({ title, text, id, lang, tone }: { title: string; text: string; id: string; lang: string; tone: "fix" | "native" }) {
+  return (
+    <div className={cn("rounded-lg border p-3", tone === "native" ? "border-success/40 bg-success/5" : "border-border bg-muted/40")}>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">{title}</span>
+        <span className="flex gap-1.5">
+          <SpeakBtn id={id} text={speakable(text)} compact label={title} />
+          <SpeakBtn id={id} text={speakable(text)} slow compact label={title} />
+          <SaveBtn note={{ text, lang, kind: "sample" }} />
+        </span>
+      </div>
+      <Words id={id} text={text} className="font-serif text-[17px] leading-relaxed" />
+    </div>
+  );
+}
+
 function ErrorCard({ message, latest }: { message: string; latest: boolean }) {
   const kind = classifyError(message);
   const title = kind === "limit" ? "Model đã chạm giới hạn sử dụng" : kind === "blocked" ? "Nội dung bị AI Studio chặn" : "AI Studio báo lỗi";
@@ -76,6 +92,27 @@ function ErrorCard({ message, latest }: { message: string; latest: boolean }) {
   );
 }
 
+/** Hiện trực tiếp phần AI Studio đang stream; xong mới dựng giao diện đầy đủ. */
+export function LivePanel() {
+  const live = useStore(appStore, (s) => s.live);
+  return (
+    <section className="space-y-3 rounded-lg border border-border bg-card p-4" aria-live="off" aria-label="Giám khảo đang trả lời, hiển thị trực tiếp">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" /></span>
+        Giám khảo đang trả lời
+        <span className="text-xs font-normal text-muted-foreground">Hiển thị trực tiếp, xong sẽ dựng lại đầy đủ</span>
+      </div>
+      {live.length === 0 && <Skeleton />}
+      {live.map((sec, i) => (
+        <div key={i}>
+          {sec.label && <div className="mb-0.5 text-xs font-medium text-muted-foreground">{sec.label}</div>}
+          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{sec.text}{i === live.length - 1 && <span className="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-primary" />}</p>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 const Skeleton = ({ label }: { label?: string }) => (
   <div className="flex items-center gap-1.5 py-1" aria-label={label ?? "Giám khảo đang soạn câu trả lời"}>
     {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 animate-dot rounded-full bg-muted-foreground" style={{ animationDelay: `${i * 0.18}s` }} />)}
@@ -94,8 +131,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
   const pending = (name: string) => streaming && t.open === name;
   const tgl = (k: keyof typeof open) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
-  const simpleFb = !!t.feedback && !t.transcript && !t.score && !t.vocab?.length && !t.pron?.length && !t.verdict;
-  const hasReview = !simpleFb && !!(t.transcript || t.score || t.feedback || t.vocab?.length || t.pron?.length || t.verdict);
+  const simpleFb = !!t.feedback && !t.transcript && !t.fixed && !t.better && !t.drill && !t.score && !t.vocab?.length && !t.pron?.length && !t.verdict;
+  const hasReview = !simpleFb && !!(t.transcript || t.fixed || t.better || t.drill || t.score || t.feedback || t.vocab?.length || t.pron?.length || t.verdict);
   const concealSay = !!t.say && mode === "listening" && !answered && !open.reveal;
   const concealQ = !!t.q && latest && listenOnly && !open.reveal;
   const fbOpen = open.fb ?? latest;
@@ -127,6 +164,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
           )}
           {t.score && !pending("SCORE") && <Score items={t.score} />}
           {pending("SCORE") && <Skeleton label="Đang chấm điểm" />}
+          {t.fixed && !pending("FIXED") && <Rewrite title="Câu của bạn, đã sửa" text={t.fixed} id={audioId("fixed")} lang={lang} tone="fix" />}
+          {t.better && !pending("BETTER") && <Rewrite title="Người bản xứ sẽ nói" text={t.better} id={audioId("better")} lang={lang} tone="native" />}
           {pending("FEEDBACK") && <Skeleton label="Đang soạn nhận xét" />}
           {t.feedback && !pending("FEEDBACK") && (
             <div>
@@ -137,6 +176,12 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             </div>
           )}
           {!!t.pron?.length && !pending("PRON") && <PhraseList title="Phát âm cần sửa" items={t.pron} idp={audioId("pron")} lang={lang} />}
+          {t.drill && !pending("DRILL") && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <div className="mb-1 flex items-center gap-1.5 text-sm font-medium"><Dumbbell size={15} className="text-primary" />Bài tập sửa lỗi</div>
+              <div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.drill }} />
+            </div>
+          )}
           {!!t.vocab?.length && !pending("VOCAB") && <PhraseList title="Nói tự nhiên hơn" items={t.vocab} idp={audioId("vocab")} lang={lang} />}
         </section>
       )}

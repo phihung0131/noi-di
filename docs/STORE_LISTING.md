@@ -16,7 +16,7 @@ TÍNH NĂNG
 • 8 ngôn ngữ: English (Mỹ, Anh), 日本語, 한국어, 中文, Deutsch, Français, Español, Português (Brasil), kèm phiên âm cho chữ không phải Latin.
 • 3 chế độ: Hỏi đáp có chấm, Hội thoại tự nhiên, Nghe hiểu. Trình độ A2 đến C1.
 • Điểm trên 100 "giống người bản xứ" gồm phát âm, trôi chảy, tự nhiên, ngữ pháp, từ vựng.
-• Nhận xét cụ thể: transcript, bảng sửa lỗi "Bạn nói / Người bản xứ sẽ nói / Vì sao", từ phát âm sai, cách nói tự nhiên hơn.
+• Nhận xét cụ thể: transcript, bản sửa đầy đủ câu trả lời, bản người bản xứ sẽ nói, bảng lỗi (loại, bạn nói, sửa thành, vì sao), từ phát âm sai và một bài tập sửa lỗi.
 • Ghi âm có sóng âm, nghe lại trước khi gửi, câu mẫu và câu hỏi đọc bằng giọng của trình duyệt (có bản chậm).
 • Sổ từ vựng lưu câu hay để ôn lại, xem được cả trong popup.
 • Tổng kết buổi, biểu đồ điểm, xử lý lỗi rõ ràng (hết hạn mức thì gợi ý chuyển model nhẹ hơn).
@@ -43,7 +43,7 @@ Cung cấp giao diện luyện nói ngoại ngữ trên trang Google AI Studio.
 ## Giải trình quyền
 - **storage:** lưu cài đặt, sổ từ vựng và mốc luyện tập trong trình duyệt của người dùng.
 - **activeTab:** cho popup điều khiển và đọc trạng thái tab AI Studio mà người dùng đang xem.
-- **Truy cập aistudio.google.com:** chạy giao diện luyện nói trên trang này; chụp màn hình tab khi người dùng bấm "Chụp" trong báo sự cố.
+- **Truy cập aistudio.google.com:** chạy giao diện luyện nói trên trang này; chụp màn hình tab khi người dùng bấm "Chụp" trong báo sự cố (ảnh chỉ tải về máy).
 - **Mã chạy trong trang (world MAIN) `tap.js`:** chỉ đọc luồng micro mà chính trang đã xin, để vẽ sóng âm và cho người dùng nghe lại bản ghi. Không mở micro riêng, không gửi dữ liệu đi.
 
 ## Chính sách quyền riêng tư
