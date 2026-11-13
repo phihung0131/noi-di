@@ -7,7 +7,7 @@
 **Biến Google AI Studio thành phòng luyện nói ngoại ngữ.**
 Giám khảo AI hỏi, bạn nói, nhận xét và điểm "giống người bản xứ" ngay từng câu.
 
-[Tính năng](#tính-năng) · [Cài đặt](#cài-đặt) · [Cách hoạt động](#cách-hoạt-động) · [Quyền riêng tư](#quyền-riêng-tư) · [Phát triển](#phát-triển) · [Ủng hộ](#ủng-hộ-và-góp-ý)
+[**Cài từ Chrome Web Store**](https://chromewebstore.google.com/detail/hhljlbkjbenlaaogplhalnfeffiinocg) · [Tính năng](#tính-năng) · [Cài đặt](#cài-đặt) · [Cách hoạt động](#cách-hoạt-động) · [Quyền riêng tư](#quyền-riêng-tư) · [Phát triển](#phát-triển) · [Ủng hộ](#ủng-hộ-và-góp-ý)
 
 </div>
 
@@ -38,7 +38,9 @@ Nói Đi là tiện ích Chrome (Manifest V3) chạy trên [Google AI Studio](ht
 
 ## Cài đặt
 
-Chưa có trên Chrome Web Store. Cài từ mã nguồn (cần Node.js 20 trở lên):
+**Cách nhanh nhất:** cài từ [Chrome Web Store](https://chromewebstore.google.com/detail/hhljlbkjbenlaaogplhalnfeffiinocg).
+
+Hoặc cài từ mã nguồn (cần Node.js 20 trở lên):
 
 ```bash
 git clone https://github.com/phihung0131/noi-di.git
