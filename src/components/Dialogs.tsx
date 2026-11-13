@@ -13,6 +13,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { Select } from "./ui/select";
 import { Switch } from "./ui/switch";
+import { Tip } from "./ui/tooltip";
 
 const Field = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
   <label className="block space-y-1.5"><span className="text-sm font-medium">{label}</span>{children}{hint && <span className="block text-xs text-muted-foreground">{hint}</span>}</label>
@@ -36,11 +37,11 @@ export function NewSessionDialog() {
               <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
                 {MODES.map((m) => {
                   return (
-                    <button key={m.id} type="button" role="radio" aria-checked={c.mode === m.id} onClick={() => upd({ mode: m.id as Mode })}
+                    <Tip key={m.id} side="top" label={m.detail}><button type="button" role="radio" aria-checked={c.mode === m.id} onClick={() => upd({ mode: m.id as Mode })}
                       className={cn("rounded-lg border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40", c.mode === m.id ? "border-primary bg-primary/10" : "border-border hover:bg-muted")}>
                       <div className="text-sm font-medium">{m.label}</div>
                       <div className="mt-0.5 text-xs text-muted-foreground">{m.hint}</div>
-                    </button>
+                    </button></Tip>
                   );
                 })}
               </div>

@@ -1,5 +1,5 @@
 import { useStore } from "@tanstack/react-store";
-import { AlertTriangle, ChevronDown, Dumbbell, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
+import { AlertTriangle, ChevronDown, Dumbbell, EyeOff, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
 import { appStore, openReport, retryReply, setDialog, skipQuestion, switchModelAndRetry } from "@/lib/controller";
 import { classifyError } from "@/lib/errors";
@@ -59,6 +59,15 @@ function Rewrite({ title, text, id, lang, tone }: { title: string; text: string;
         </span>
       </div>
       <Words id={id} text={text} className="font-serif text-[17px] leading-relaxed" />
+    </div>
+  );
+}
+
+function Concealed({ title }: { title: string }) {
+  return (
+    <div role="status" className="flex items-center gap-2.5 rounded-lg border border-dashed border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+      <EyeOff size={16} className="shrink-0" />
+      <span><b className="font-medium text-foreground">{title}</b> đang được ẩn để bạn nói tự nhiên. Sẽ hiện lại khi ghi âm xong.</span>
     </div>
   );
 }
@@ -125,6 +134,9 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
   const listenOnly = useStore(appStore, (s) => s.prefs.listenOnly);
   const showTrans = useStore(appStore, (s) => s.prefs.showTrans);
   const lang = useLang();
+  const recState = useStore(appStore, (s) => s.rec.state);
+  // Đang ghi âm: ẩn câu mẫu, câu đã sửa, câu người bản xứ để người nói không nhìn đọc.
+  const recording = recState === "starting" || recState === "recording" || recState === "stopping";
   const [open, setOpen] = useState<{ tr?: boolean; hint?: boolean; sample?: boolean; fb?: boolean; reveal?: boolean }>({});
   const t = turn;
   // Mục model đang viết dở (bảng, điểm, danh sách) chưa hiện, chờ đóng mục để khỏi nhấp nháy.
@@ -164,8 +176,9 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
           )}
           {t.score && !pending("SCORE") && <Score items={t.score} />}
           {pending("SCORE") && <Skeleton label="Đang chấm điểm" />}
-          {t.fixed && !pending("FIXED") && <Rewrite title="Câu của bạn, đã sửa" text={t.fixed} id={audioId("fixed")} lang={lang} tone="fix" />}
-          {t.better && !pending("BETTER") && <Rewrite title="Người bản xứ sẽ nói" text={t.better} id={audioId("better")} lang={lang} tone="native" />}
+          {(t.fixed || t.better) && recording && <Concealed title="Câu đã sửa và câu người bản xứ sẽ nói" />}
+          {t.fixed && !recording && !pending("FIXED") && <Rewrite title="Câu của bạn, đã sửa" text={t.fixed} id={audioId("fixed")} lang={lang} tone="fix" />}
+          {t.better && !recording && !pending("BETTER") && <Rewrite title="Người bản xứ sẽ nói" text={t.better} id={audioId("better")} lang={lang} tone="native" />}
           {pending("FEEDBACK") && <Skeleton label="Đang soạn nhận xét" />}
           {t.feedback && !pending("FEEDBACK") && (
             <div>
@@ -176,7 +189,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             </div>
           )}
           {!!t.pron?.length && !pending("PRON") && <PhraseList title="Phát âm cần sửa" items={t.pron} idp={audioId("pron")} lang={lang} />}
-          {t.drill && !pending("DRILL") && (
+          {t.drill && recording && <Concealed title="Bài tập sửa lỗi" />}
+          {t.drill && !recording && !pending("DRILL") && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
               <div className="mb-1 flex items-center gap-1.5 text-sm font-medium"><Dumbbell size={15} className="text-primary" />Bài tập sửa lỗi</div>
               <div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.drill }} />
@@ -223,7 +237,8 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
           </div>
           {t.tr && <Fold open={trOpen}><p className="text-[15px] text-muted-foreground">{t.tr}</p></Fold>}
           {t.hint && <Fold open={!!open.hint}><div className="rounded-lg bg-accent-soft/60 p-3"><div className="mb-1 text-sm font-medium">Gợi ý ý tưởng</div><div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.hint }} /></div></Fold>}
-          {t.sample && (
+          {t.sample && recording && open.sample && <Concealed title="Câu mẫu" />}
+          {t.sample && !recording && (
             <Fold open={!!open.sample}>
               <div className="rounded-lg bg-muted/70 p-4">
                 <div className="mb-2 flex items-center justify-between gap-2">

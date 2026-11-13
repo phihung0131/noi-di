@@ -25,9 +25,12 @@ export const LEVELS = [
   { id: "C1", label: "C1 · Cao cấp" },
 ];
 export const MODES = [
-  { id: "guided", label: "Hỏi đáp có chấm", hint: "Giám khảo hỏi, bạn nói, chấm điểm từng lượt" },
-  { id: "chat", label: "Hội thoại", hint: "Nói chuyện tự nhiên, nghe và trả lời" },
-  { id: "listening", label: "Nghe hiểu", hint: "Nghe đoạn ngắn rồi trả lời bằng lời" },
+  { id: "guided", label: "Hỏi đáp có chấm", hint: "Giám khảo hỏi, bạn nói, chấm điểm từng lượt",
+    detail: "Giám khảo đưa từng câu hỏi, bạn trả lời bằng giọng nói 20–60 giây. Mỗi lượt nhận điểm trên 100, bản sửa đầy đủ, cách người bản xứ sẽ nói và bài tập sửa lỗi. Chưa đạt thì nói lại cùng câu." },
+  { id: "chat", label: "Hội thoại", hint: "Nói chuyện tự nhiên, nghe và trả lời",
+    detail: "Trò chuyện tự nhiên với một người bạn bản xứ: họ phản hồi ngắn rồi hỏi tiếp để bạn nói tiếp. Mỗi lượt chỉ sửa nhanh tối đa 2 lỗi để không cắt mạch, chấm điểm đầy đủ mỗi 3 lượt." },
+  { id: "listening", label: "Nghe hiểu", hint: "Nghe đoạn ngắn rồi trả lời bằng lời",
+    detail: "Bạn nghe một đoạn 2–4 câu (không thấy chữ), rồi trả lời câu hỏi kiểm tra hiểu bằng giọng nói. Chữ chỉ hiện sau khi bạn trả lời. Được chấm theo mức hiểu ý chính, không chấm phát âm." },
 ] as const;
 export const DEFAULT_CONFIG = { lang: "en-US", mode: "guided", level: "B1", output: "vi", topic: "" } as const;
 

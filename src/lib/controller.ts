@@ -74,8 +74,17 @@ export function latestSpeakable(turns: Turn[], _mode: SessionConfig["mode"]): { 
   }
   return [];
 }
-export function playLatest() {
-  const items = latestSpeakable(get().turns, get().session.mode);
+/** Chống đọc lặp: cùng một nội dung đã tự đọc trong 2 phút gần đây thì không tự đọc lại. */
+const autoSpoken = new Map<string, number>();
+const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
+export function playLatest(auto = false) {
+  let items = latestSpeakable(get().turns, get().session.mode);
+  if (auto) {
+    const now = Date.now();
+    items = items.filter((i) => now - (autoSpoken.get(norm(i.text)) ?? 0) > 120000);
+    if (!items.length) return;
+    items.forEach((i) => autoSpoken.set(norm(i.text), now));
+  }
   const run = (i: number) => { if (items[i]) say(items[i].key, items[i].text, false, () => run(i + 1)); };
   run(0);
 }
@@ -393,11 +402,11 @@ function tick() {
   } else if (!gen) {
     const last = turns[turns.length - 1] as ModelTurn | undefined;
     // Chỉ đọc khi câu trả lời đã "lắng": hết stream và DOM không đổi trong 1,2s. Nếu không, đọc nửa chừng lúc chưa render xong rồi đọc lại lần nữa.
-    const settled = Date.now() - lastDomActivity() > 1200;
+    const settled = Date.now() - lastDomActivity() > 1500 && !isHydrating() && (get().rec.state === "idle" || get().rec.state === "recorded");
     if (last && last.role === "model" && !last.empty && settled && !played.has(last.key)) {
       played.add(last.key);
       if (last.score) void countAnswer();
-      if (get().prefs.autoPlay && (last.q || last.say)) playLatest();
+      if (get().prefs.autoPlay && (last.q || last.say)) playLatest(true);
     }
   }
 
