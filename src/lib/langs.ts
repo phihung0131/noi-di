@@ -52,3 +52,9 @@ export function speakable(s: string): string {
   }
   return t.replace(/\s+/g, " ").trim();
 }
+
+/** Tách "cụm — nghĩa" (hoặc "cụm: nghĩa") thành [cụm, phần giải thích]. Model đôi khi dùng dấu hai chấm. */
+export function splitPhrase(v: string): [string, string] {
+  const [phrase, ...rest] = v.split(/\s[—–-]\s|:\s+(?=\S)/);
+  return [phrase.trim(), rest.join(" · ").trim()];
+}

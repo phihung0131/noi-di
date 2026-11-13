@@ -21,3 +21,13 @@ describe("langChip", () => {
     expect(langChip("ja-JP")).toBe("tiếng Nhật");
   });
 });
+
+import { splitPhrase } from "@/lib/langs";
+describe("splitPhrase", () => {
+  it("tách theo gạch dài hoặc dấu hai chấm, chỉ đọc phần ngôn ngữ luyện nói", () => {
+    expect(splitPhrase("work for — làm cho")).toEqual(["work for", "làm cho"]);
+    expect(splitPhrase("zwei /tsvai/: Chú ý âm đầu /ts/ và nguyên âm đôi")).toEqual(["zwei /tsvai/", "Chú ý âm đầu /ts/ và nguyên âm đôi"]);
+    expect(splitPhrase("der Wochenmarkt: chợ phiên hàng tuần")).toEqual(["der Wochenmarkt", "chợ phiên hàng tuần"]);
+    expect(splitPhrase("pop — /pɑːp/ — mím môi")).toEqual(["pop", "/pɑːp/ · mím môi"]);
+  });
+});

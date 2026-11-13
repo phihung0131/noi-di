@@ -20,7 +20,8 @@ describe("prompt theo chế độ", () => {
   it("nghe hiểu: chấm HIEU, retry đọc lại cùng đoạn, không có câu mẫu", () => {
     const p = buildPrompt(cfg("listening"));
     expect(p).toContain("HIEU = hiểu ý chính");
-    expect(p).toContain("đọc lại CÙNG đoạn @@SAY cũ");
+    expect(p).toContain("BẮT BUỘC in lại @@SAY cũ NGUYÊN VĂN");
+    expect(p).toContain("ĐỐI CHIẾU từng chi tiết");
     expect(p).toContain("KHÔNG dùng @@SAMPLE");
     expect(p).toContain("@@SCORE NATIVE 62 | HIEU 80");
   });

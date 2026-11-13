@@ -82,7 +82,7 @@ ${mode === "chat" ? `Bước 2, in kết quả theo đúng thứ tự. Hội tho
 
 ` : mode === "listening" ? `Bước 2, in kết quả theo đúng thứ tự (chế độ nghe hiểu chấm mức hiểu, không chấm phát âm):
 1. @@TRANSCRIPT: chép lại đúng từng chữ những gì nghe được.
-2. @@SCORE: ${scoreFmt}. HIEU = hiểu ý chính, TRALOI = trả lời đúng và đủ ý câu hỏi, PRON và FLU như "Cách chấm". NATIVE = làm tròn(0,4 × HIEU + 0,2 × TRALOI + 0,2 × PRON + 0,2 × FLU).
+2. In ${scoreFmt}. HIEU = hiểu ý chính, TRALOI = trả lời đúng và đủ ý câu hỏi, PRON và FLU như "Cách chấm". NATIVE = làm tròn(0,4 × HIEU + 0,2 × TRALOI + 0,2 × PRON + 0,2 × FLU). Chấm HIEU và TRALOI bằng cách ĐỐI CHIẾU từng chi tiết học viên nói với đoạn @@SAY: bắt đầu 100, trừ 30 cho mỗi chi tiết sai hoặc bịa (số, thời gian, tên, hành động), 25 nếu thiếu ý chính, 10 cho mỗi chi tiết phụ bị bỏ sót. Nếu ý chính sai sự thật so với đoạn nghe thì HIEU và TRALOI tối đa 40 và VERDICT phải là retry.
 3. @@FIXED: bản sửa đầy đủ TOÀN BỘ câu trả lời của học viên (chỉ sửa lỗi).
 4. @@BETTER: cùng ý, nói như người bản xứ ở mức ${c.level} thật sự sẽ nói.
 5. @@FEEDBACK: bắt đầu bằng "Nhận định:" 1–2 câu thẳng thắn: học viên hiểu đúng ý chính chưa, bỏ sót chi tiết nào (trích đúng chỗ trong @@SAY). Rồi bảng tối đa 4 dòng lỗi với 4 cột "Loại | Bạn nói | Sửa thành | Vì sao".
@@ -90,7 +90,7 @@ ${mode === "chat" ? `Bước 2, in kết quả theo đúng thứ tự. Hội tho
 7. @@DRILL: 1 bài tập ngắn nhắm lỗi nghe hoặc nói quan trọng nhất.
 8. @@VERDICT pass khi HIEU từ 60 trở lên, ngược lại retry.
    - pass: @@SAY là đoạn nghe MỚI 2–4 câu (hơi khó hơn nếu học viên đúng), rồi @@Q <số kế tiếp> là câu hỏi kiểm tra hiểu cho đoạn mới, rồi @@TR, @@HINT. KHÔNG dùng @@SAMPLE.
-   - retry: đọc lại CÙNG đoạn @@SAY cũ nguyên văn cùng @@Q cũ (cùng số), nêu 1 gợi ý nghe lại.
+   - retry: BẮT BUỘC in lại @@SAY cũ NGUYÊN VĂN (từng chữ, để học viên nghe lại) rồi @@Q cũ (cùng số), @@TR, và @@HINT nêu 1 gợi ý nghe lại. Không được bỏ @@SAY.
 
 ` : `Bước 2, in kết quả theo đúng thứ tự:
 1. @@TRANSCRIPT: chép lại đúng từng chữ những gì nghe được, kể cả lỗi và từ đệm, không sửa giùm.
@@ -112,7 +112,7 @@ Mỗi tiêu chí xuất phát từ 100 rồi TRỪ theo lỗi bạn đã liệt 
 - NAT (diễn đạt tự nhiên): trừ 6–10 cho mỗi cụm dịch từng chữ từ tiếng Việt hoặc cách nói người bản xứ không dùng; 3 cho mỗi collocation chưa chuẩn; trần 75 nếu chỉ dùng câu đơn rất cơ bản.
 - GRA (ngữ pháp): trừ 8–12 cho lỗi làm sai nghĩa hoặc cấu trúc câu; 4–6 cho lỗi thì, chia động từ, giới từ; 2–3 cho mạo từ, số ít/nhiều; trần 80 nếu không có cấu trúc phức nào.
 - VOC (từ vựng): trừ 5–8 cho mỗi từ dùng sai nghĩa; 3 cho từ quá chung chung khi có từ chính xác hơn; trần 75 nếu lặp lại cùng vài từ cơ bản.
-- NATIVE = "mức giống người bản xứ" (%) = làm tròn(0,30 × PRON + 0,20 × FLU + 0,20 × NAT + 0,15 × GRA + 0,15 × VOC). Tính thật bằng công thức, kiểm tra lại phép tính trước khi in.
+- NATIVE = "mức giống người bản xứ" (%)${mode === "listening" ? " (chế độ nghe hiểu dùng công thức riêng ở Bước 2, bỏ qua công thức dưới đây)" : ""} = làm tròn(0,30 × PRON + 0,20 × FLU + 0,20 × NAT + 0,15 × GRA + 0,15 × VOC). Tính thật bằng công thức, kiểm tra lại phép tính trước khi in.
 - Giới hạn bắt buộc: PRON dưới 50 thì NATIVE tối đa 60. Câu trả lời dưới 10 từ thì NATIVE tối đa 55 và ghi rõ trong @@FEEDBACK là mẫu quá ngắn nên độ tin cậy thấp. NATIVE từ 85 trở lên chỉ khi hầu như không có lỗi đáng kể trong ít nhất 4 câu liền. Học viên chen tiếng mẹ đẻ thì NAT và VOC tối đa 50.
 - Mốc tham chiếu NATIVE: 20–35 mới học, người nghe rất khó hiểu; 35–50 hiểu được nhưng nặng giọng và nhiều lỗi; 50–65 rõ ràng, còn lỗi hệ thống; 65–80 tự nhiên, lỗi nhỏ thỉnh thoảng; 80–92 gần như bản xứ; 93+ không phân biệt được. Học viên ${c.level} điển hình rơi vào ${c.level === "A2" ? "25–45" : c.level === "B1" ? "40–60" : c.level === "B2" ? "55–75" : "70–88"}. Không thổi phồng điểm.
 - Nhất quán giữa các lượt: cùng chất lượng thì cùng mức điểm. Điểm chỉ thay đổi quá 10 so với lượt trước khi có bằng chứng rõ trong audio, và nêu bằng chứng đó trong @@FEEDBACK. Có tiến bộ thật ở lỗi lặp lại thì ghi nhận, không có thì không tăng.
@@ -137,6 +137,7 @@ Mỗi tiêu chí xuất phát từ 100 rồi TRỪ theo lỗi bạn đã liệt 
   @@SAMPLE      → (không dùng ở chế độ nghe hiểu) câu mẫu tối đa 3 câu ngắn (khoảng 30–45 từ), tự nhiên như người bản xứ ở mức ${c.level}, đủ nói 15–25 giây, một đoạn, bằng ${L.short}
   @@SAMPLETR    → dịch câu mẫu bằng ${out}, một đoạn
 ${romanRule}
+- Mỗi mục trong @@PRON và @@VOCAB là MỘT gạch đầu dòng riêng, ngăn các phần bằng đúng dấu " — " (gạch dài có khoảng trắng hai bên). Tuyệt đối không dùng dấu hai chấm để ngăn, và phần đầu chỉ là từ/cụm bằng ngôn ngữ luyện nói (không kèm phiên âm hay giải thích).
 - Mỗi lượt kết thúc bằng một câu hỏi mới (@@Q) hoặc yêu cầu nói lại. Không viết gì ngoài các marker. Không lặp lại câu hỏi ngoài @@Q. Không dùng blockquote, không emoji.
 - @@Q, @@SAY, @@SAMPLE, @@FIXED, @@BETTER sẽ được đọc thành tiếng: chỉ chứa lời nói thuần, không ký hiệu markdown, không chú thích trong ngoặc, không gạch chân hay đánh dấu chỗ đã sửa.
 

@@ -3,7 +3,7 @@ import { AlertTriangle, ChevronDown, Dumbbell, EyeOff, Eye, Languages, Lightbulb
 import { memo, useEffect, useRef, useState } from "react";
 import { appStore, openReport, retryReply, setDialog, skipQuestion, switchModelAndRetry } from "@/lib/controller";
 import { classifyError } from "@/lib/errors";
-import { speakable } from "@/lib/langs";
+import { speakable, splitPhrase } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
 import { cn, fmtTime } from "@/lib/utils";
 import { Fold, SaveBtn, SpeakBtn, useLang } from "./bits";
@@ -33,12 +33,12 @@ function PhraseList({ title, items, idp, lang }: { title: string; items: string[
       <h4 className="mb-1.5 text-sm font-medium">{title}</h4>
       <ul className="divide-y divide-border rounded-lg border border-border">
         {items.map((v, i) => {
-          const [phrase, ...rest] = v.split(/\s[—–-]\s/);
+          const [phrase, gloss] = splitPhrase(v);
           return (
             <li key={i} className="flex items-center gap-2 px-3 py-2">
-              <div className="min-w-0 flex-1"><span className="font-serif text-[15px] font-semibold">{phrase}</span>{rest.length > 0 && <span className="ml-2 text-sm text-muted-foreground">{rest.join(" · ")}</span>}</div>
+              <div className="min-w-0 flex-1"><span className="font-serif text-[15px] font-semibold">{phrase}</span>{gloss && <span className="ml-2 text-sm text-muted-foreground">{gloss}</span>}</div>
               <SpeakBtn id={`${idp}:${i}`} text={speakable(phrase)} compact label={phrase} />
-              <SaveBtn note={{ text: phrase, tr: rest.join(" · "), lang, kind: "vocab" }} />
+              <SaveBtn note={{ text: phrase, tr: gloss, lang, kind: "vocab" }} />
             </li>
           );
         })}
@@ -176,11 +176,11 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
           )}
           {t.score && !pending("SCORE") && <Score items={t.score} />}
           {pending("SCORE") && <Skeleton label="Đang chấm điểm" />}
-          {(t.fixed || t.better) && recording && <Concealed title="Câu đã sửa và câu người bản xứ sẽ nói" />}
+          {recording && !!(t.fixed || t.better || t.drill || t.feedback || t.pron?.length || t.vocab?.length) && <Concealed title="Câu đã sửa, câu người bản xứ sẽ nói, chi tiết lỗi và bài tập" />}
           {t.fixed && !recording && !pending("FIXED") && <Rewrite title="Câu của bạn, đã sửa" text={t.fixed} id={audioId("fixed")} lang={lang} tone="fix" />}
           {t.better && !recording && !pending("BETTER") && <Rewrite title="Người bản xứ sẽ nói" text={t.better} id={audioId("better")} lang={lang} tone="native" />}
           {pending("FEEDBACK") && <Skeleton label="Đang soạn nhận xét" />}
-          {t.feedback && !pending("FEEDBACK") && (
+          {t.feedback && !recording && !pending("FEEDBACK") && (
             <div>
               <button className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => tgl("fb")} aria-expanded={fbOpen}>
                 <span>Chi tiết lỗi và gợi ý</span><ChevronDown size={16} className={cn("transition-transform", fbOpen && "rotate-180")} />
@@ -188,15 +188,14 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
               <Fold open={fbOpen}><div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.feedback }} /></Fold>
             </div>
           )}
-          {!!t.pron?.length && !pending("PRON") && <PhraseList title="Phát âm cần sửa" items={t.pron} idp={audioId("pron")} lang={lang} />}
-          {t.drill && recording && <Concealed title="Bài tập sửa lỗi" />}
+          {!!t.pron?.length && !recording && !pending("PRON") && <PhraseList title="Phát âm cần sửa" items={t.pron} idp={audioId("pron")} lang={lang} />}
           {t.drill && !recording && !pending("DRILL") && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
               <div className="mb-1 flex items-center gap-1.5 text-sm font-medium"><Dumbbell size={15} className="text-primary" />Bài tập sửa lỗi</div>
               <div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.drill }} />
             </div>
           )}
-          {!!t.vocab?.length && !pending("VOCAB") && <PhraseList title="Nói tự nhiên hơn" items={t.vocab} idp={audioId("vocab")} lang={lang} />}
+          {!!t.vocab?.length && !recording && !pending("VOCAB") && <PhraseList title="Nói tự nhiên hơn" items={t.vocab} idp={audioId("vocab")} lang={lang} />}
         </section>
       )}
 

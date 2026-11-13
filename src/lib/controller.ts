@@ -74,14 +74,14 @@ export function latestSpeakable(turns: Turn[], _mode: SessionConfig["mode"]): { 
   }
   return [];
 }
-/** Chống đọc lặp: cùng một nội dung đã tự đọc trong 2 phút gần đây thì không tự đọc lại. */
+/** Chống đọc lặp: cùng một nội dung đã tự đọc trong 20 giây gần đây thì không tự đọc lại. */
 const autoSpoken = new Map<string, number>();
 const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
 export function playLatest(auto = false) {
   let items = latestSpeakable(get().turns, get().session.mode);
   if (auto) {
     const now = Date.now();
-    items = items.filter((i) => now - (autoSpoken.get(norm(i.text)) ?? 0) > 120000);
+    items = items.filter((i) => now - (autoSpoken.get(norm(i.text)) ?? 0) > 20000);
     if (!items.length) return;
     items.forEach((i) => autoSpoken.set(norm(i.text), now));
   }
