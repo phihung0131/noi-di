@@ -53,8 +53,13 @@ export function Feed() {
           if (t.role === "user") return <UserCard key={t.key} turn={t} />;
           const idx = turns.indexOf(t);
           if (generating && idx === turns.length - 1) return <LivePanel key={t.key} />;
-          const prevUser = turns.slice(0, idx).reverse().find((x) => x.role === "user");
-          return <ExaminerCard key={t.key} turn={t} latest={idx === lastModel} streaming={generating && idx === turns.length - 1} answered={idx < turns.length - 1} rec={prevUser?.role === "user" ? sent[prevUser.idx] : undefined} />;
+          // AI Studio có thể tách audio và dòng số đo thành hai lượt user liền nhau: lấy bản ghi trong cả cụm.
+          let rec: (typeof sent)[number] | undefined;
+          for (let j = idx - 1; j >= 0; j--) { const x = turns[j]; if (x.role !== "user") break; if (sent[x.idx]) { rec = sent[x.idx]; break; } }
+          // Lượt trả lời "Bắt đầu" chưa chấm gì: bỏ verdict nếu model lỡ in ra.
+          const prevU = turns.slice(0, idx).reverse().find((x) => x.role === "user");
+          const shown = prevU?.role === "user" && prevU.idx === 0 && prevU.hidden && t.verdict && !t.score && !t.transcript ? { ...t, verdict: undefined } : t;
+          return <ExaminerCard key={t.key} turn={shown} latest={idx === lastModel} streaming={generating && idx === turns.length - 1} answered={idx < turns.length - 1} rec={rec} />;
         })}
         {summaryDone && !stalled && (
           <SupportCard title="Hoàn thành một buổi luyện, giỏi lắm!" text="Nói Đi miễn phí và do một người làm. Nếu buổi luyện này có ích, mời tác giả ly cà phê để mình có thêm sức làm tiếp nhé." onAction={() => setDialog("donate")} />

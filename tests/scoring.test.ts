@@ -14,6 +14,11 @@ describe("normalizeScore", () => {
   it("không ghi chú khi model tính đúng (lệch ≤1 do làm tròn)", () => {
     expect(normalizeScore(S({ NATIVE: 65, PRON: 62, FLU: 70, NAT: 60, GRA: 72, VOC: 68 }), LONG).raw).toBeUndefined();
   });
+  it("giám khảo cho thấp hơn công thức thì giữ số của giám khảo, không thổi phồng", () => {
+    const n = normalizeScore(S({ NATIVE: 55, PRON: 76, FLU: 78, NAT: 75, GRA: 80, VOC: 75 }), LONG);
+    expect(n.items[0].value).toBe("55");
+    expect(n.raw).toBeUndefined();
+  });
   it("PRON dưới 50 thì NATIVE tối đa 60", () => {
     const n = normalizeScore(S({ NATIVE: 70, PRON: 45, FLU: 95, NAT: 95, GRA: 95, VOC: 95 }), LONG);
     expect(n.items[0].value).toBe("60");
@@ -22,7 +27,7 @@ describe("normalizeScore", () => {
     expect(normalizeScore(S({ PRON: 80, FLU: 80, NAT: 80, GRA: 80, VOC: 80 }), "I like it").items[0].value).toBe("55");
   });
   it("nghe hiểu và đọc nhại dùng công thức riêng", () => {
-    expect(normalizeScore(S({ NATIVE: 0, HIEU: 70, TRALOI: 70, PRON: 60, FLU: 65 }), "x").items[0].value).toBe("67");
+    expect(normalizeScore(S({ NATIVE: 99, HIEU: 70, TRALOI: 70, PRON: 60, FLU: 65 }), "x").items[0].value).toBe("67");
     expect(normalizeScore(S({ NATIVE: 74, PRON: 68, FLU: 74, ACC: 84 }), "short").items[0].value).toBe("74");
   });
   it("kẹp điểm về 0–100, thiếu tiêu chí thì giữ nguyên", () => {
@@ -38,7 +43,8 @@ describe("wordCount và verdict", () => {
   });
   it("verdict suy từ điểm", () => {
     expect(expectedVerdict("guided", S({ NATIVE: 54 }))).toBe("retry");
-    expect(expectedVerdict("guided", S({ NATIVE: 55 }))).toBe("pass");
+    expect(expectedVerdict("guided", S({ NATIVE: 55 }))).toBeUndefined();
+    expect(expectedVerdict("listening", S({ HIEU: 60 }))).toBe("pass");
     expect(expectedVerdict("chat", S({ NATIVE: 10 }))).toBeUndefined();
     expect(expectedVerdict("shadow", S({ NATIVE: 75, ACC: 78 }))).toBe("retry");
     expect(expectedVerdict("shadow", S({ NATIVE: 75, ACC: 84 }))).toBe("pass");

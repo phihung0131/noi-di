@@ -16,6 +16,13 @@ describe("analyzePeaks", () => {
     const f = analyzePeaks(seq([0.3, 546]))!; // ~30s
     expect(speechRate(Array(60).fill("word").join(" "), f)).toBe(120);
   });
+  it("tốc độ nói tính cả ngừng ngắn giữa câu, chỉ bỏ ngừng dài hơn 2s", () => {
+    // 10s nói, xen 4 lần ngừng 0,55s (giữa câu) và 1 lần ngừng 2,75s
+    const f = analyzePeaks(seq([0.3, 40], [0.005, 10], [0.3, 40], [0.005, 10], [0.3, 40], [0.005, 50], [0.3, 40], [0.005, 10], [0.3, 40], [0.005, 10], [0.3, 40]))!;
+    expect(f.activeMs).toBe((240 + 40) * 55);
+    // 30 từ / 15,4s ≈ 117 từ/phút (chia cho thời gian có tiếng thuần sẽ ra 136)
+    expect(speechRate(Array(30).fill("word").join(" "), f)).toBe(117);
+  });
 });
 
 describe("silentTail", () => {

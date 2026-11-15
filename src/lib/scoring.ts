@@ -60,10 +60,14 @@ export function normalizeScore(items: ScoreItem[], transcript?: string): Normali
   let native = Object.entries(f).reduce((sum, [k, w]) => sum + w * clamp(vals.get(k)!), 0);
   if (kind !== "listening" && clamp(vals.get("PRON")!) < 50) native = Math.min(native, 60);
   if (kind === "speak" && transcript !== undefined && wordCount(transcript) < 10) native = Math.min(native, 55);
-  const n = clamp(native);
+  const formula = clamp(native);
   const given = vals.get("NATIVE");
+  const hasGiven = given !== undefined && Number.isFinite(given);
+  // Chỉ kéo XUỐNG khi giám khảo cho cao hơn công thức. Giám khảo cho thấp hơn thì giữ số của họ:
+  // họ có thể đã áp giới hạn phần mềm không tự biết (câu quá ngắn, ngừng quá lâu, lạc đề...), tính lại sẽ thổi phồng điểm.
+  const n = hasGiven ? Math.min(formula, clamp(given)) : formula;
   const out = [{ key: "NATIVE", value: String(n) }, ...fixed.filter((i) => i.key !== "NATIVE")];
-  return { items: out, raw: given !== undefined && Number.isFinite(given) && Math.abs(given - n) > 1 ? String(Math.round(given)) : undefined };
+  return { items: out, raw: hasGiven && given - n > 1 ? String(Math.round(given)) : undefined };
 }
 
 export const scoreOf = (items: ScoreItem[] | undefined, key: string): number | undefined => {
@@ -78,5 +82,8 @@ export function expectedVerdict(mode: string, items: ScoreItem[] | undefined): "
   if (v === undefined) return undefined;
   // Đọc nhại: còn cần khớp câu gốc từ 80 (như prompt).
   if (mode === "shadow") { const acc = scoreOf(items, "ACC"); if (acc !== undefined && acc < 80) return "retry"; }
-  return v >= rule.min ? "pass" : "retry";
+  if (v < rule.min) return "retry";
+  // Hỏi đáp: pass còn cần "trả lời đủ ý" (và từ 5 từ trở lên), phần mềm không tự xét được nên không khẳng định pass.
+  if (mode === "guided") return undefined;
+  return "pass";
 }
