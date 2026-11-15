@@ -37,7 +37,7 @@ export function topBlocks(turn: Element): Element[] {
 
 interface Section { name: string; args: string; paras: string[]; html: string[] }
 const MARKER = /^\s*@@([A-Z]+)(?:[ \t]+(.*))?$/;
-const KNOWN = new Set(["PART", "Q", "SAY", "TR", "ROMAN", "HINT", "SAMPLE", "SAMPLETR", "SAMPLEROMAN", "TRANSCRIPT", "SCORE", "FEEDBACK", "VOCAB", "PRON", "VERDICT", "PREP", "FIXED", "BETTER", "DRILL", "NOTES"]);
+const KNOWN = new Set(["PART", "Q", "SAY", "TR", "ROMAN", "HINT", "SAMPLE", "SAMPLETR", "SAMPLEROMAN", "TRANSCRIPT", "SCORE", "FEEDBACK", "VOCAB", "PRON", "VERDICT", "PREP", "FIXED", "BETTER", "DRILL", "NOTES", "LIMIT"]);
 
 /** Tham số có thể nằm ngay trên dòng marker hoặc ở dòng kế tiếp (AI Studio gộp chung một đoạn). */
 const argText = (s: Section) => `${s.args} ${s.paras.join(" ")}`.trim();
@@ -130,6 +130,7 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
   const pron = get("PRON"); if (pron) out.pron = listItems(pron, secBlocks.get(pron));
   const part = get("PART"); if (part) out.part = part.args.replace(/\D/g, "") || undefined;
   const prep = get("PREP"); if (prep && /\d/.test(argText(prep))) out.prep = parseInt(argText(prep).replace(/\D/g, ""), 10);
+  const limit = get("LIMIT"); if (limit && /\d/.test(argText(limit))) out.limit = parseInt(argText(limit).replace(/\D/g, ""), 10);
   const vd = get("VERDICT"); if (vd) out.verdict = /pass/i.test(argText(vd)) ? "pass" : /retry/i.test(argText(vd)) ? "retry" : undefined;
   const sc = get("SCORE");
   if (sc) {
@@ -148,7 +149,7 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
 
 const LABELS: Record<string, string> = {
   TRANSCRIPT: "Bạn nói", SCORE: "Điểm", FIXED: "Bản sửa đầy đủ", BETTER: "Người bản xứ sẽ nói", FEEDBACK: "Nhận xét", PRON: "Phát âm", VOCAB: "Nói tự nhiên hơn",
-  DRILL: "Bài tập", NOTES: "Giám khảo đang phân tích", VERDICT: "Kết luận", Q: "Câu hỏi", TR: "Dịch", SAY: "Giám khảo nói", HINT: "Gợi ý", SAMPLE: "Câu mẫu", SAMPLETR: "Dịch câu mẫu", ROMAN: "Phiên âm", SAMPLEROMAN: "Phiên âm câu mẫu", PREP: "Chuẩn bị", PART: "Phần",
+  DRILL: "Bài tập", NOTES: "Giám khảo đang phân tích", VERDICT: "Kết luận", Q: "Câu hỏi", TR: "Dịch", SAY: "Giám khảo nói", HINT: "Gợi ý", SAMPLE: "Câu mẫu", SAMPLETR: "Dịch câu mẫu", ROMAN: "Phiên âm", SAMPLEROMAN: "Phiên âm câu mẫu", PREP: "Chuẩn bị", PART: "Phần", LIMIT: "Thời gian nói",
 };
 export interface LiveSection { label: string; text: string }
 

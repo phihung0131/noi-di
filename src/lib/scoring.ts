@@ -1,4 +1,5 @@
 import { diffWords } from "./diff";
+import { ieltsOverall } from "./exams";
 import type { ModelTurn, ScoreItem } from "./types";
 
 /**
@@ -13,7 +14,15 @@ export const FORMULAS: Record<string, Record<string, number>> = {
   listening: { HIEU: 0.4, TRALOI: 0.2, PRON: 0.2, FLU: 0.2 },
   /** Đọc nhại */
   shadow: { PRON: 0.5, FLU: 0.25, ACC: 0.25 },
+  /** Luyện thi TOPIK 말하기 (src/lib/exams.ts) */
+  topik: { TASK: 1 / 3, LANG: 1 / 3, DEL: 1 / 3 },
+  /** Luyện thi HSKK */
+  hskk: { TASK: 0.35, PRON: 0.3, FLU: 0.15, LANG: 0.2 },
 };
+/** Khoá điểm tổng theo loại công thức. */
+export const OVERALL: Record<string, string> = { speak: "NATIVE", listening: "NATIVE", shadow: "NATIVE", topik: "TOTAL", hskk: "TOTAL", ielts: "BAND" };
+/** Điểm tổng của một lượt, bất kể thang: NATIVE, TOTAL (0–100) hoặc BAND IELTS (0–9). */
+export const overallKey = (keys: string[]) => ["NATIVE", "TOTAL", "BAND"].find((k) => keys.includes(k));
 
 /** Mốc qua câu (VERDICT pass) theo chế độ: điểm dùng để so và ngưỡng. */
 export const PASS_RULE = {
@@ -33,8 +42,11 @@ export function wordCount(text: string): number {
   return rest + Math.round(cjk / 2);
 }
 
-export function formulaFor(keys: string[]): keyof typeof FORMULAS | null {
+export function formulaFor(keys: string[]): string | null {
   const has = (k: string) => keys.includes(k);
+  if (["FC", "LR", "GRA", "P"].every(has)) return "ielts";
+  if (["TASK", "LANG", "DEL"].every(has)) return "topik";
+  if (["TASK", "PRON", "FLU", "LANG"].every(has)) return "hskk";
   if (has("HIEU")) return "listening";
   if (has("ACC")) return "shadow";
   if (["PRON", "FLU", "NAT", "GRA", "VOC"].every(has)) return "speak";
@@ -54,21 +66,38 @@ export interface Normalized { items: ScoreItem[]; raw?: string }
 export function normalizeScore(items: ScoreItem[], transcript?: string): Normalized {
   const vals = new Map(items.map((i) => [i.key, parseFloat(i.value)]));
   const kind = formulaFor([...vals.keys()]);
+  if (kind === "ielts") return normalizeIelts(vals);
   const fixed = items.map((i) => ({ key: i.key, value: String(clamp(parseFloat(i.value))) }));
   if (!kind) return { items: fixed };
   const f = FORMULAS[kind];
   if (Object.keys(f).some((k) => !Number.isFinite(vals.get(k)))) return { items: fixed };
   let native = Object.entries(f).reduce((sum, [k, w]) => sum + w * clamp(vals.get(k)!), 0);
-  if (kind !== "listening" && clamp(vals.get("PRON")!) < 50) native = Math.min(native, 60);
+  if ((kind === "speak" || kind === "shadow") && clamp(vals.get("PRON")!) < 50) native = Math.min(native, 60);
   if (kind === "speak" && transcript !== undefined && wordCount(transcript) < 10) native = Math.min(native, 55);
   const formula = clamp(native);
-  const given = vals.get("NATIVE");
+  const key = OVERALL[kind];
+  const given = vals.get(key);
   const hasGiven = given !== undefined && Number.isFinite(given);
   // Chỉ kéo XUỐNG khi giám khảo cho cao hơn công thức. Giám khảo cho thấp hơn thì giữ số của họ:
   // họ có thể đã áp giới hạn phần mềm không tự biết (câu quá ngắn, ngừng quá lâu, lạc đề...), tính lại sẽ thổi phồng điểm.
   const n = hasGiven ? Math.min(formula, clamp(given)) : formula;
-  const out = [{ key: "NATIVE", value: String(n) }, ...fixed.filter((i) => i.key !== "NATIVE")];
+  const out = [{ key, value: String(n) }, ...fixed.filter((i) => i.key !== key)];
   return { items: out, raw: hasGiven && given - n > 1 ? String(Math.round(given)) : undefined };
+}
+
+/** IELTS: mỗi tiêu chí band nguyên 0–9; BAND theo quy tắc làm tròn IELTS, chỉ kéo xuống như các thang khác. */
+function normalizeIelts(vals: Map<string, number>): Normalized {
+  const band = (v: number | undefined) => Math.max(0, Math.min(9, Math.round(v ?? 0)));
+  const crit = ["FC", "LR", "GRA", "P"].map((k) => ({ key: k, value: band(vals.get(k)) }));
+  const formula = ieltsOverall(crit.map((c) => c.value));
+  const given = vals.get("BAND");
+  const hasGiven = given !== undefined && Number.isFinite(given);
+  const givenHalf = hasGiven ? Math.max(0, Math.min(9, Math.round(given * 2) / 2)) : formula;
+  const n = Math.min(formula, givenHalf);
+  return {
+    items: [{ key: "BAND", value: String(n) }, ...crit.map((c) => ({ key: c.key, value: String(c.value) }))],
+    raw: hasGiven && given - n >= 0.5 ? String(given) : undefined,
+  };
 }
 
 export const scoreOf = (items: ScoreItem[] | undefined, key: string): number | undefined => {

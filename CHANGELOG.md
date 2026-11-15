@@ -26,6 +26,8 @@
 - **Luyện tới khi đúng** (tuỳ chọn khi tạo buổi, trừ Hội thoại): chỉ sang câu mới khi nói đúng hết. Hỏi đáp: không còn lỗi ngữ pháp, từ vựng, tự nhiên hay phát âm rõ ràng. Đọc nhại: đủ từng từ, khớp câu gốc từ 95. Nghe hiểu: đúng mọi chi tiết. Giám khảo lỡ cho qua khi câu vẫn còn khác bản sửa thì hiện cảnh báo và nút "Luyện lại câu này".
 - **Ôn sổ theo lịch (SRS):** thẻ ôn nhìn câu đã nói sai hoặc nghĩa, tự nói to rồi mới hiện đáp án; nhớ thì giãn lịch 1, 3, 7, 16, 35 ngày, chưa nhớ thì ôn lại sau 10 phút. Thanh đầu hiện số mục đến hạn.
 - **Nghe so sánh A/B:** phát bản ghi của bạn rồi câu đúng ngay sau đó.
+- **Chế độ Luyện thi:** IELTS Speaking (3 phần, cue card 1 phút chuẩn bị và 2 phút nói; band FC/LR/GRA/P, band tổng làm tròn theo quy tắc IELTS do tiện ích tự tính), TOPIK 말하기 (6 dạng câu, đúng thời gian chuẩn bị và trả lời), HSKK 初级/中级/高级 (đúng các phần của từng cấp, thang 100, đạt từ 60). Hết thời gian nói thì ghi âm tự dừng. Tranh trong đề thật được mô tả bằng chữ.
+- **Đối chiếu bằng nhận dạng giọng nói của Chrome** (tuỳ chọn, mặc định tắt): bản chép lời độc lập gửi kèm cho giám khảo đối chiếu và hiện khi khác lời giám khảo chép. Chính sách quyền riêng tư đã cập nhật.
 
 **Sửa lỗi (thử trên AI Studio thật)**
 - Trang không bao giờ "lắng" khi AI Studio rút nội dung lượt cũ ra khỏi DOM: không tự đọc câu hỏi mới, không đếm lượt, không lưu lịch sử. Đã sửa.

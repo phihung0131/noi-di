@@ -62,3 +62,13 @@ describe("sổ từ vựng", () => {
     expect((await storage.notes()).map((n) => n.text).sort()).toEqual(["entire weekend", "laundry", "spent"]);
   });
 });
+
+describe("asrMeta", () => {
+  it("gói bản chép lời của Chrome trong ngoặc kép, bỏ ký tự phá định dạng, giới hạn độ dài", async () => {
+    const { asrMeta, turnMeta } = await import("@/lib/meta");
+    expect(asrMeta('I visit my "grandma"\nyesterday')).toBe('asr_check: "I visit my grandma yesterday"');
+    expect(asrMeta("")).toBe("");
+    expect(asrMeta("a ".repeat(400)).length).toBeLessThan(520);
+    expect(turnMeta([], [], 0, "I go home")).toBe('[NOIDI-META] asr_check: "I go home"');
+  });
+});

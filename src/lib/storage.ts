@@ -12,7 +12,7 @@ async function write(key: string, value: unknown): Promise<void> {
   try { localStorage.setItem("noidi:" + key, JSON.stringify(value)); } catch { /* ignore */ }
 }
 
-export const DEFAULT_PREFS: Prefs = { rate: 0.95, voiceName: "", autoPlay: true, showTrans: false, listenOnly: false, theme: "auto", autoStop: false };
+export const DEFAULT_PREFS: Prefs = { rate: 0.95, voiceName: "", autoPlay: true, showTrans: false, listenOnly: false, theme: "auto", autoStop: false, asrCheck: false };
 
 export const storage = {
   on: () => read<boolean>("on", false),

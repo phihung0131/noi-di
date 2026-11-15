@@ -1,6 +1,7 @@
 import { Store } from "@tanstack/store";
 import { applyPrompt, chatId, hydrate, liveNow, refreshTail, isGenerating, isHydrating, isNewChatPage, currentModelId, health, lastDomActivity, native, snackbarText, switchToLighterModel, resetChatCache, selectModel, sendText, snapshot } from "./bridge";
 import { baseDiag } from "./diag";
+import { asrAbort, asrStart, asrStop, asrSupported } from "./asr";
 import type { LiveSection } from "./parser";
 import { DEFAULT_CONFIG } from "./langs";
 import { silentTail } from "./fluency";
@@ -13,7 +14,7 @@ import type { CategoryId, Diag } from "./support";
 import type { ModelTurn, Prefs, RecState, SessionConfig, Turn } from "./types";
 import { sleep, waitFor } from "./utils";
 
-export interface SentRec { url: string; ms: number; peaks: number[] }
+export interface SentRec { url: string; ms: number; peaks: number[]; asr?: string }
 export interface AppState {
   on: boolean;
   ready: boolean;
@@ -29,7 +30,7 @@ export interface AppState {
   chatId: string | null;
   session: SessionConfig;
   prefs: Prefs;
-  rec: { state: RecState; startedAt: number; ms: number; url: string | null; peaks: number[] };
+  rec: { state: RecState; startedAt: number; ms: number; url: string | null; peaks: number[]; asr?: string };
   sent: Record<number, SentRec>;
   playingRec: string | null;
   toast: { id: number; msg: string } | null;
@@ -145,8 +146,23 @@ async function beginNative() {
   await waitFor(() => mic.tapped || !native.hasStop(), limit, 100);
   if (!native.hasStop()) throw new Error(MIC_BLOCKED);
   if (!mic.tapped && perm !== "granted") throw new Error(MIC_BLOCKED);
-  setRec({ state: "recording", startedAt: Date.now(), ms: 0, peaks: [] });
+  setRec({ state: "recording", startedAt: Date.now(), ms: 0, peaks: [], asr: undefined });
+  if (get().prefs.asrCheck && asrSupported()) asrStart(get().session.lang);
   watchSilence();
+  watchLimit();
+}
+/** Luyện thi: hết thời gian nói của câu (@@LIMIT) thì tự dừng ghi âm như đề thật (cho thêm 1 giây). */
+let limitTimer = 0;
+function watchLimit() {
+  window.clearTimeout(limitTimer);
+  if (get().session.mode !== "exam") return;
+  const last = [...get().turns].reverse().find((t): t is ModelTurn => t.role === "model" && !!t.q);
+  if (!last?.limit) return;
+  limitTimer = window.setTimeout(() => {
+    if (get().rec.state !== "recording") return;
+    toast(`Hết ${last.limit} giây nói. Ghi âm đã dừng như khi thi thật.`);
+    void stopRecording();
+  }, last.limit * 1000 + 1000);
 }
 /** Tự dừng khi im lặng ~2,5s sau khi đã nói (bật trong Cài đặt). */
 let silenceTimer = 0;
@@ -172,14 +188,14 @@ export const stopRecording = () => guarded(async () => {
   } catch (e) {
     // Dừng thất bại: dọn sạch để không kẹt ở trạng thái "đã ghi" mà không có bản ghi.
     console.warn("[noidi] native stop failed", (e as Error).message, native.debugButtons());
-    mic.abort();
+    mic.abort(); asrAbort();
     await native.cancel();
     setRec({ state: "idle", url: null, ms: 0, peaks: [] });
     throw new Error("Không dừng được bản ghi của AI Studio. Hãy thử ghi lại; nếu vẫn lỗi, kiểm tra micro và quyền micro của Chrome.");
   }
   const prev = get().rec.url; if (prev) { try { URL.revokeObjectURL(prev); } catch { /* */ } }
-  const r = await mic.stop();
-  setRec({ state: "recorded", ms: r?.ms || ms, url: r?.url ?? null, peaks: [...mic.peaks] });
+  const [r, asr] = await Promise.all([mic.stop(), get().prefs.asrCheck ? asrStop() : Promise.resolve("")]);
+  setRec({ state: "recorded", ms: r?.ms || ms, url: r?.url ?? null, peaks: [...mic.peaks], asr: asr || undefined });
   if (!r?.url) toast("Đã ghi xong nhưng chưa nghe lại được bản ghi này. Bạn vẫn có thể gửi.");
 }, "idle");
 export const redoRecording = () => guarded(async () => {
@@ -190,7 +206,7 @@ export const redoRecording = () => guarded(async () => {
   await beginNative();
 });
 export const cancelRecording = () => guarded(async () => {
-  stopPlayback(); mic.abort();
+  stopPlayback(); mic.abort(); asrAbort();
   const prev = get().rec.url; if (prev) { try { URL.revokeObjectURL(prev); } catch { /* */ } }
   await native.cancel();
   setRec({ state: "idle", url: null, ms: 0, peaks: [] });
@@ -200,9 +216,9 @@ export const sendRecording = () => guarded(async () => {
   const { rec } = get();
   setRec({ state: "sending" });
   let meta = "";
-  try { meta = turnMeta(get().turns, rec.peaks, rec.ms); } catch { /* số đo chỉ là phụ */ }
+  try { meta = turnMeta(get().turns, rec.peaks, rec.ms, rec.asr); } catch { /* số đo chỉ là phụ */ }
   const idx = await native.send(meta);
-  if (rec.url) set({ sent: { ...get().sent, [idx]: { url: rec.url, ms: rec.ms, peaks: rec.peaks } } });
+  if (rec.url) set({ sent: { ...get().sent, [idx]: { url: rec.url, ms: rec.ms, peaks: rec.peaks, asr: rec.asr } } });
   setRec({ state: "idle", url: null, ms: 0, peaks: [] });
 }, "recorded");
 

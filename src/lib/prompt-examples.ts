@@ -285,7 +285,257 @@ Bạn giúp mình mấy cái thùng này trước khi đi được không?
 - Lên giọng nhẹ ở cuối câu hỏi
 `;
 
-export const EXAMPLES: Record<Mode, (short: string, out: string) => string> = {
+const ielts = `
+@@TRANSCRIPT
+
+I am working as a accountant in a small company, it is in district 3. I like my job because, uh, my colleagues is very nice and I can learn many thing.
+
+@@NOTES
+
+FC 6: trả lời đủ dài, có "because" phát triển ý; 1 lần "uh" ngập ngừng tìm từ, từ nối còn đơn điệu
+LR 6: đủ từ để nói về công việc nhưng "learn many thing" chung chung, chưa có từ ít phổ biến
+GRA 5: chủ yếu câu đơn và 1 mệnh đề because; lỗi lặp: "a accountant", "colleagues is", "many thing"
+P 6: dễ hiểu; mất âm cuối /s/ ở "colleagues" và /t/ ở "district"; ngữ điệu khá phẳng
+BAND = (6 + 6 + 5 + 6) / 4 = 5,75 → làm tròn lên 6
+
+@@SCORE BAND 6 | FC 6 | LR 6 | GRA 5 | P 6
+
+@@FIXED
+
+I work as an accountant in a small company in District 3. I like my job because my colleagues are very nice and I can learn many things.
+
+@@BETTER
+
+I'm an accountant at a small firm in District 3. I really enjoy it, mainly because my colleagues are great and I'm picking up new skills all the time.
+
+@@FEEDBACK
+
+Nhận định: trả lời đủ ý và dễ hiểu, nhưng lỗi cơ bản về mạo từ và hoà hợp chủ ngữ giữ GRA ở band 5.
+
+| Loại | Bạn nói | Sửa thành | Vì sao |
+|---|---|---|---|
+| Ngữ pháp | a accountant | an accountant | "an" trước âm nguyên âm |
+| Ngữ pháp | my colleagues is | my colleagues are | chủ ngữ số nhiều đi với "are" |
+| Ngữ pháp | many thing | many things | "many" + danh từ số nhiều |
+| Từ vựng | learn many thing | pick up new skills | cụm tự nhiên, nâng LR |
+
+Điểm trừ lớn nhất: GRA (band 5), kéo band tổng xuống.
+
+@@PRON
+
+- colleagues — /ˈkɒliːɡz/ — mất âm cuối /z/ — cao
+
+@@VOCAB
+
+- pick up new skills — học thêm kỹ năng mới
+- a small firm — một công ty nhỏ
+
+@@DRILL
+
+I'm an accountant. My colleagues are great.
+
+Đọc 3 lần: nối "an accountant" thành /ənəˈkaʊntənt/, bật rõ /z/ cuối "colleagues".
+
+@@VERDICT pass
+
+@@Q 2
+
+What do you find most challenging about your job?
+
+@@TR
+
+Điều gì trong công việc khiến bạn thấy khó khăn nhất?
+
+@@LIMIT 40
+
+@@HINT
+
+- Một khó khăn cụ thể
+- Vì sao nó khó
+- Bạn xử lý thế nào
+
+@@SAMPLE
+
+Probably the end of the financial year. The workload doubles, so I have to stay late and double-check every figure.
+
+@@SAMPLETR
+
+Có lẽ là cuối năm tài chính. Khối lượng việc tăng gấp đôi nên tôi phải ở lại muộn và kiểm tra lại từng con số.
+`;
+
+const topik = `
+@@TRANSCRIPT
+
+주말에 저는 친구를 만나요. 그리고 영화 봤어요. 재미있어요.
+
+@@NOTES
+
+TASK 70: trả lời đúng câu hỏi nhưng chỉ 3 câu ngắn, chưa nêu chi tiết (ở đâu, phim gì)
+LANG 60: câu đơn sơ cấp; trộn thì 만나요/봤어요 không nhất quán khi nói thói quen
+DEL 65: phát âm dễ hiểu, ngắt từng câu, ngữ điệu phẳng
+TOTAL = (70 + 60 + 65) / 3 = 65
+
+@@SCORE TOTAL 65 | TASK 70 | LANG 60 | DEL 65
+
+@@FIXED
+
+주말에 저는 보통 친구를 만나요. 그리고 같이 영화를 봐요. 정말 재미있어요.
+
+@@BETTER
+
+주말에는 보통 친구를 만나서 영화를 봐요. 영화를 보고 나서 카페에서 이야기도 해요. 그래서 주말이 정말 기다려져요.
+
+@@FEEDBACK
+
+Nhận định: làm đúng yêu cầu câu 1 nhưng quá ngắn và lẫn thì, chưa dùng hết 30 giây.
+
+| Loại | Bạn nói | Sửa thành | Vì sao |
+|---|---|---|---|
+| Ngữ pháp | 영화 봤어요 | 영화를 봐요 | nói thói quen hằng tuần dùng hiện tại |
+| Tự nhiên | 친구를 만나요. 그리고 영화 봤어요. | 친구를 만나서 영화를 봐요 | nối hai hành động bằng -아서/어서 |
+
+Điểm trừ lớn nhất: LANG (câu đơn, lẫn thì).
+
+@@PRON
+
+- 재미있어요 — 재미이써요 — nối âm ㅆ sang âm tiết sau chưa rõ — vừa
+
+@@VOCAB
+
+- 만나서 — gặp rồi (nối hành động)
+- 기다려져요 — thấy mong chờ
+
+@@DRILL
+
+친구를 만나서 영화를 봐요.
+
+Đọc 3 lần, nối liền "만나서" với "영화를".
+
+@@VERDICT pass
+
+@@PART 2
+
+@@Q 2
+
+[그림] 옷 가게. 손님이 산 바지가 너무 작아요. 점원: "어서 오세요. 무엇을 도와드릴까요?" 손님이 되어 바지를 교환해 달라고 말하세요.
+
+@@TR
+
+[Tranh] Cửa hàng quần áo. Chiếc quần khách đã mua quá chật. Nhân viên: "Xin chào, tôi giúp gì được ạ?" Hãy đóng vai khách hàng xin đổi quần.
+
+@@ROMAN
+
+[geurim] ot gage. sonnim-i san baji-ga neomu jagayo. jeomwon: "eoseo oseyo. mueoseul dowadeurilkkayo?" sonnim-i doeeo bajireul gyohwanhae dallago malhaseyo.
+
+@@PREP 30
+
+@@LIMIT 40
+
+@@HINT
+
+- Nêu vấn đề: mua khi nào, bị làm sao
+- Xin đổi cỡ lớn hơn, lịch sự (-아/어 주세요)
+- Hỏi có cần hoá đơn không
+
+@@SAMPLE
+
+어제 이 바지를 샀는데 너무 작아요. 한 사이즈 큰 걸로 바꿔 주세요. 영수증도 가지고 왔어요.
+
+@@SAMPLETR
+
+Hôm qua tôi mua chiếc quần này nhưng chật quá. Làm ơn đổi cho tôi cỡ lớn hơn một số. Tôi có mang hoá đơn theo.
+`;
+
+const hskk = `
+@@TRANSCRIPT
+
+我周末一般在家看书，有时候我和朋友去公园玩。我很喜欢周末。
+
+@@NOTES
+
+TASK 70: trả lời đúng câu hỏi nhưng chỉ 3 câu, chưa đủ thời lượng yêu cầu
+PRON 66: 周末 đọc zhōu thành zōu (không uốn lưỡi); 一般 chưa biến điệu yì; 喜欢 thanh 3 chưa đủ thấp
+FLU 70: ngắt sau mỗi câu, nói chậm
+LANG 75: đúng ngữ pháp, từ vựng sơ cấp, chưa có từ nối
+TOTAL = 0,35×70 + 0,30×66 + 0,15×70 + 0,20×75 = 24,5 + 19,8 + 10,5 + 15 = 69,8 → 70
+
+@@SCORE TOTAL 70 | TASK 70 | PRON 66 | FLU 70 | LANG 75
+
+@@FIXED
+
+我周末一般在家看书，有时候和朋友去公园玩。我很喜欢周末。
+
+@@BETTER
+
+周末我一般在家看看书、休息一下。天气好的时候，我会约朋友去公园散散步。所以我特别喜欢周末。
+
+@@FEEDBACK
+
+Nhận định: đúng ý và đúng ngữ pháp, nhưng quá ngắn so với thời lượng phần này và còn lỗi thanh điệu.
+
+| Loại | Bạn nói | Sửa thành | Vì sao |
+|---|---|---|---|
+| Phát âm | zōumò | zhōumò | zh là âm uốn lưỡi |
+| Phát âm | yībān | yìbān | 一 trước thanh 1 đọc thanh 4 |
+| Tự nhiên | 我和朋友去公园玩 | 约朋友去公园散散步 | cách nói tự nhiên hơn, thêm động từ lặp |
+
+Điểm trừ lớn nhất: PRON (thanh điệu và âm uốn lưỡi).
+
+@@PRON
+
+- 周末 — zhōumò — đọc thành zōumò — cao
+- 一般 — yìbān — giữ thanh 1 của 一 — cao
+
+@@VOCAB
+
+- 约朋友 — hẹn bạn
+- 散散步 — đi dạo một chút
+
+@@DRILL
+
+周末我一般在家。
+
+Đọc 3 lần: cong lưỡi ở zh của 周, đọc 一 thành yì.
+
+@@VERDICT pass
+
+@@Q 2
+
+你最喜欢哪个季节？为什么？
+
+@@TR
+
+Bạn thích mùa nào nhất? Vì sao?
+
+@@ROMAN
+
+Nǐ zuì xǐhuan nǎge jìjié? Wèishénme?
+
+@@PREP 60
+
+@@LIMIT 90
+
+@@HINT
+
+- Mùa bạn thích và thời tiết mùa đó
+- Hoạt động bạn hay làm
+- Một kỷ niệm cụ thể
+
+@@SAMPLE
+
+我最喜欢秋天。秋天不冷也不热，天气很舒服。周末我常常和家人去爬山。
+
+@@SAMPLETR
+
+Tôi thích nhất mùa thu. Mùa thu không lạnh cũng không nóng, thời tiết rất dễ chịu. Cuối tuần tôi thường đi leo núi cùng gia đình.
+`;
+
+/** Ví dụ cho chế độ luyện thi, theo nhóm kỳ thi. */
+export const EXAM_EXAMPLES: Record<"ielts" | "topik" | "hskk", string> = { ielts, topik, hskk };
+export const examExample = (examId: string, short: string, out: string) =>
+  wrap(short, out, EXAM_EXAMPLES[examId.startsWith("hskk") ? "hskk" : examId === "topik" ? "topik" : "ielts"]);
+
+export const EXAMPLES: Record<Exclude<Mode, "exam">, (short: string, out: string) => string> = {
   guided: (s, o) => wrap(s, o, guided),
   chat: (s, o) => wrap(s, o, chat),
   listening: (s, o) => wrap(s, o, listening),
