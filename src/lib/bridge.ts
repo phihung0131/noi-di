@@ -180,13 +180,17 @@ export const native = {
   hasStop: () => !!dlgBtn(LABEL.stopRec),
   /** Nhãn các nút trong hộp thoại ghi âm (để gỡ lỗi khi UI gốc đổi). */
   debugButtons: () => Array.from(dlg()?.querySelectorAll<HTMLElement>("button, [role=button]") ?? []).map((b) => (b.innerText + "|" + (b.getAttribute("aria-label") ?? "")).replace(/\s+/g, " ").trim()),
-  /** Gửi bản ghi; trả về chỉ số lượt user mới (để gắn bản nghe lại). */
-  async send(): Promise<number> {
+  /**
+   * Gửi bản ghi; trả về chỉ số lượt user mới (để gắn bản nghe lại).
+   * `meta`: dòng số đo [NOIDI-META] gửi kèm audio trong cùng lượt (prompt dặn model không coi là lời học viên).
+   */
+  async send(meta = ""): Promise<number> {
     const add = dlgBtn(LABEL.addToPrompt);
     if (!add) throw new Error("Chưa có bản ghi để gửi.");
     const userCount = turnEls().filter((e) => !isModelTurn(e)).length;
     add.click();
     if (!(await waitFor(() => !dlg() && first(SEL.promptAudio), 8000))) throw new Error("Không đính kèm được audio.");
+    if (meta) { const ta = promptTa(); if (ta) setNative(ta, ta.value.trim() ? `${ta.value.trim()}\n${meta}` : meta); }
     let btn = await waitFor(runButton, 1500);
     if (!btn) {
       const ta = promptTa();
@@ -221,10 +225,44 @@ export async function applyPrompt(c: SessionConfig) {
   if (!ta) throw new Error("Không mở được ô System instructions.");
   setNative(ta, buildPrompt(c));
   await sleep(400);
+  setTemperature(c.mode === "chat" ? 0.7 : 0.4);
   // đóng panel cài đặt: nút đóng trong panel chứa ô system instructions
   const panel = ta.closest("[class*='panel' i], [role=dialog]") ?? document;
   byLabel(LABEL.closePanel, panel)?.click();
   await sleep(500);
+}
+
+/**
+ * Đặt temperature thấp để chấm điểm ổn định hơn (cùng câu trả lời, gửi lại không lệch nhiều).
+ * Cố gắng hết mức: chỉ chỉnh khi ô temperature đang hiện trong Run settings; không thấy thì bỏ qua, không báo lỗi.
+ */
+export function setTemperature(v: number): boolean {
+  // Chỉ nhận ô có nhãn temperature ở rất gần (tối đa 3 cấp cha, chữ ngắn), để không chỉnh nhầm Top P hay số token.
+  const near = (el: Element) => {
+    if (LABEL.temperature.test(el.getAttribute("aria-label") ?? "")) return true;
+    let p = el.parentElement;
+    for (let i = 0; i < 3 && p; i++, p = p.parentElement) {
+      const t = (p.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (t.length > 60) return false;
+      if (LABEL.temperature.test(t)) return p.querySelectorAll("input").length <= 2;
+    }
+    return false;
+  };
+  const inputs = [...all<HTMLInputElement>(SEL.temperature), ...Array.from(document.querySelectorAll<HTMLInputElement>("input[type=number], input[type=range]")).filter(near)];
+  let done = false;
+  for (const el of new Set(inputs)) {
+    try {
+      const max = parseFloat(el.max || "2");
+      if (Number.isFinite(max) && v > max) continue;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(el, String(v));
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      el.dispatchEvent(new Event("blur", { bubbles: true }));
+      done = true;
+    } catch { /* bỏ qua */ }
+  }
+  if (!done) console.info("[noidi] không thấy ô temperature, giữ nguyên cài đặt của AI Studio");
+  return done;
 }
 
 /* ---------- đổi model ---------- */

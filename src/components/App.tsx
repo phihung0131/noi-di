@@ -9,6 +9,7 @@ import { Feed } from "./Feed";
 import { Header } from "./Header";
 import { Logo } from "./Logo";
 import { NotebookDialog } from "./Notebook";
+import { ProgressDialog } from "./Progress";
 import { Toast } from "./Toast";
 import { PortalCtx } from "./ui/portal";
 import { TooltipProvider } from "./ui/tooltip";
@@ -51,7 +52,7 @@ export function App() {
               <div className="fixed inset-0 z-[2147482000] flex flex-col bg-background text-foreground">
                 <Header />
                 <main className="relative min-h-0 flex-1"><Feed /><Dock /><Toast /></main>
-                <NewSessionDialog /><SettingsDialog /><NotebookDialog /><ModelDialog /><SupportDialog />
+                <NewSessionDialog /><SettingsDialog /><NotebookDialog /><ModelDialog /><SupportDialog /><ProgressDialog />
               </div>
             )}
           </TooltipProvider>

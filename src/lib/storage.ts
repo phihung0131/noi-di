@@ -1,4 +1,4 @@
-import type { NoteItem, Prefs, SessionConfig } from "./types";
+import type { HistoryItem, NoteItem, Prefs, SessionConfig } from "./types";
 import { DEFAULT_CONFIG } from "./langs";
 
 const hasChrome = typeof chrome !== "undefined" && !!chrome.storage?.local;
@@ -12,7 +12,7 @@ async function write(key: string, value: unknown): Promise<void> {
   try { localStorage.setItem("noidi:" + key, JSON.stringify(value)); } catch { /* ignore */ }
 }
 
-export const DEFAULT_PREFS: Prefs = { rate: 0.95, voiceName: "", autoPlay: true, showTrans: false, listenOnly: false, theme: "auto" };
+export const DEFAULT_PREFS: Prefs = { rate: 0.95, voiceName: "", autoPlay: true, showTrans: false, listenOnly: false, theme: "auto", autoStop: false };
 
 export const storage = {
   on: () => read<boolean>("on", false),
@@ -37,4 +37,13 @@ export const storage = {
   setStats: (v: { answers: number; nudged: number }) => write("stats", v),
   notes: () => read<NoteItem[]>("notes", []),
   setNotes: (n: NoteItem[]) => write("notes", n),
+  history: () => read<HistoryItem[]>("history", []),
+  /** Thêm một lượt đã chấm (bỏ qua nếu trùng id), giữ tối đa 3000 lượt gần nhất. */
+  addHistory: async (h: HistoryItem) => {
+    const all = await read<HistoryItem[]>("history", []);
+    if (all.some((x) => x.id === h.id)) return all;
+    const next = [...all, h].slice(-3000);
+    await write("history", next);
+    return next;
+  },
 };

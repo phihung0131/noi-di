@@ -19,6 +19,7 @@ Lưu bằng `chrome.storage.local`, chỉ trên máy bạn:
 | Cài đặt (tốc độ đọc, giọng đọc, giao diện sáng/tối, bật tắt tự đọc…) | Nhớ lựa chọn của bạn |
 | Thiết lập buổi luyện gần nhất và theo từng cuộc trò chuyện (ngôn ngữ, chế độ, trình độ) | Hiển thị đúng thông tin buổi và đọc đúng ngôn ngữ |
 | Sổ từ vựng (câu bạn chủ động lưu) | Ôn lại |
+| Lịch sử điểm từng lượt đã chấm (thời điểm, ngôn ngữ, chế độ, trình độ, điểm số; không có lời nói hay nội dung hội thoại) | Biểu đồ và thống kê "Tiến bộ" |
 | Số câu đã luyện và mốc đã nhắc ủng hộ | Chỉ để quyết định có hiện lời nhắn ủng hộ hay không |
 
 Bạn có thể xoá bằng cách gỡ tiện ích hoặc xoá dữ liệu của tiện ích trong `chrome://extensions`.
@@ -27,6 +28,7 @@ Bạn có thể xoá bằng cách gỡ tiện ích hoặc xoá dữ liệu của
 
 - Khi bạn ghi âm, **AI Studio** (Google) ghi và xử lý giọng nói bằng hộp thoại gốc của trang, dưới tài khoản Google của bạn. Việc này tuân theo chính sách của Google. Nói Đi **không gửi** giọng nói hay nội dung hội thoại tới bất kỳ nơi nào khác.
 - Nói Đi chỉ đọc nội dung trang AI Studio ngay trong trình duyệt để dựng giao diện luyện nói.
+- Kèm mỗi bản ghi, Nói Đi thêm một dòng số đo vào chính lượt chat đó trong AI Studio (thời lượng, số lần ngừng, điểm lượt trước, các lỗi đã ghi nhận) để giám khảo chấm nhất quán hơn. Số đo được tính ngay trong trình duyệt từ mức âm micro; không có âm thanh nào được gửi đi đâu khác.
 - Để vẽ sóng âm và cho bạn nghe lại, tiện ích đọc luồng micro mà AI Studio đã xin (không mở micro lần hai). Bản nghe lại chỉ nằm trong bộ nhớ của tab và mất khi tải lại trang.
 - Giọng đọc câu hỏi/câu mẫu do trình duyệt cung cấp (`speechSynthesis`). Tuỳ giọng bạn chọn, Chrome có thể dùng dịch vụ giọng nói của Google; đó là hành vi của trình duyệt, không phải của Nói Đi.
 

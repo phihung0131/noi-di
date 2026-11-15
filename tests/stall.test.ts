@@ -17,6 +17,8 @@ describe("isStalledState", () => {
     expect(isStalledState([u("asdf"), m({ feedback: "<p>không nhận ra</p>" })], false)).toBe(false));
   it("không báo khi lượt model có lỗi riêng (đã hiện thẻ lỗi)", () =>
     expect(isStalledState([u("hi"), m({ error: "rate limit" })], false)).toBe(false));
+  it("báo khi đã có verdict nhưng thiếu câu hỏi kế tiếp", () =>
+    expect(isStalledState([u("hi"), m({ transcript: "hi", score: [{ key: "NATIVE", value: "50" }], verdict: "pass" })], false)).toBe(true));
   it("không báo với bản tổng kết", () =>
     expect(isStalledState([u("Tổng kết buổi"), m({ score: [{ key: "NATIVE", value: "60" }], feedback: "<p>x</p>" })], false)).toBe(false));
 });
@@ -28,5 +30,6 @@ describe("quickLabel", () => {
     expect(quickLabel("Tổng kết buổi")?.kind).toBe("summary");
     expect(quickLabel("Phản hồi trước bị thiếu hoặc bị cắt. Hãy …")?.kind).toBe("retry");
     expect(quickLabel("Tôi thích bóng đá")).toBeNull();
+    expect(quickLabel("Tổng kết buổi\n[NOIDI-META] scored_turns=3 avg: NATIVE=60")?.kind).toBe("summary");
   });
 });

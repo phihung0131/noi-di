@@ -25,6 +25,7 @@ export const SEL = {
   errorLike: ["[class*='model-error' i]", "[class*='error' i]", "[role=alert]"],
   systemTextarea: ["textarea[aria-label*='system instruction' i]"],
   systemCard: ["button.system-instructions-card"],
+  temperature: ["input[aria-label*='temperature' i]", "[data-test-id*='temperature' i] input", "ms-slider[title*='temperature' i] input"],
 };
 
 /** Nhãn (regex) cho nút/mục cần bấm; có bản tiếng Việt. */
@@ -40,6 +41,7 @@ export const LABEL = {
   addMedia: /insert|add (media|files?|content)|attach|upload|thêm (phương tiện|tệp)/i,
   systemInstr: /system instruction|hướng dẫn hệ thống/i,
   modelCard: /model/i,
+  temperature: /temperature|nhiệt độ/i,
 };
 
 export const first = <T extends Element = HTMLElement>(cands: string[], root: ParentNode = document): T | null => {

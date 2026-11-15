@@ -184,7 +184,7 @@ function NotesTab({ prefs }: { prefs: Prefs }) {
           const on = playing === `note:${n.id}`;
           return (
             <li key={n.id} className="flex items-start gap-2 p-2.5">
-              <div className="min-w-0 flex-1"><p className="font-serif text-[15px] leading-snug">{n.text}</p>{n.tr && <p className="mt-0.5 text-xs text-muted-foreground">{n.tr}</p>}<p className="mt-0.5 text-[11px] text-muted-foreground">{n.kind === "sample" ? "Câu mẫu" : "Cách nói hay hơn"} · {n.lang}</p></div>
+              <div className="min-w-0 flex-1"><p className="font-serif text-[15px] leading-snug">{n.text}</p>{n.tr && <p className="mt-0.5 text-xs text-muted-foreground">{n.tr}</p>}<p className="mt-0.5 text-[11px] text-muted-foreground">{n.kind === "sample" ? "Câu mẫu" : n.kind === "error" ? "Lỗi cần sửa" : "Cách nói hay hơn"} · {n.lang}</p></div>
               <Button variant={on ? "default" : "secondary"} size="icon-sm" aria-label={on ? "Dừng" : `Nghe: ${n.text}`} onClick={() => speak({ key: `note:${n.id}`, text: n.text.replace(/[\[(（【].*?[\])）】]/g, " "), lang: n.lang, rate: prefs.rate, voiceName: prefs.voiceName })}>{on ? <VolumeX size={15} /> : <Volume2 size={15} />}</Button>
               <Button variant="ghost" size="icon-sm" aria-label="Xoá khỏi sổ" onClick={() => remove.mutate(n.id)}><Trash2 size={15} /></Button>
             </li>

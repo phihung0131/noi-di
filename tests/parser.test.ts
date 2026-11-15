@@ -81,3 +81,43 @@ describe("bản sửa đầy đủ và stream trực tiếp", () => {
     expect(s[3].text).toContain("Ngữ pháp  |  I go school");
   });
 });
+
+describe("1.1.1: NOTES ẩn, bảng lỗi, điểm tính lại", () => {
+  const html = `<p>@@TRANSCRIPT</p><p>Last weekend I go to the beach with my family and we eat a lot.</p>
+    <p>@@NOTES</p><p>PRON −10: /θ/ → /t/</p><p>NATIVE = 66</p>
+    <p>@@SCORE NATIVE 80 | PRON 62 | FLU 70 | NAT 60 | GRA 72 | VOC 68</p>
+    <p>@@FEEDBACK</p><table><thead><tr><th>Loại</th><th>Bạn nói</th><th>Sửa thành</th><th>Vì sao</th></tr></thead><tbody><tr><td>Ngữ pháp</td><td>I go</td><td>I went</td><td>quá khứ</td></tr><tr><td>Phát âm</td><td>wit</td><td>with</td><td>LỖI LẶP LẠI</td></tr></tbody></table>
+    <p>@@PRON</p><ul><li>with — /wɪð/ — đọc thành /wɪt/ — cao</li><li>seafood — /ˈsiːfuːd/ — mất /d/ — vừa</li></ul>`;
+  it("NOTES không lộ ra nhận xét hay giao diện", () => {
+    const t = parseModelElement(el(html));
+    expect(t.feedback).not.toContain("PRON −10");
+    expect(JSON.stringify(t)).not.toContain("/θ/ → /t/");
+  });
+  it("điểm NATIVE được tính lại, giữ số của model để ghi chú", () => {
+    const t = parseModelElement(el(html));
+    expect(t.score?.[0]).toEqual({ key: "NATIVE", value: "66" });
+    expect(t.scoreRaw).toBe("80");
+  });
+  it("tách bảng lỗi thành dữ liệu, bỏ dòng tiêu đề", () => {
+    expect(parseModelElement(el(html)).errors).toEqual([
+      { type: "Ngữ pháp", said: "I go", fix: "I went", why: "quá khứ" },
+      { type: "Phát âm", said: "wit", fix: "with", why: "LỖI LẶP LẠI" },
+    ]);
+  });
+  it("bảng markdown chưa render (dấu |) vẫn tách được", () => {
+    const t = parseModelElement(el(`<p>@@FEEDBACK</p><p>Nhận định: ổn.</p><p>| Loại | Bạn nói | Sửa thành | Vì sao |</p><p>|---|---|---|---|</p><p>| Ngữ pháp | he go | he goes | ngôi ba số ít |</p>`));
+    expect(t.errors).toEqual([{ type: "Ngữ pháp", said: "he go", fix: "he goes", why: "ngôi ba số ít" }]);
+  });
+  it("bản tổng kết (không transcript) giữ nguyên điểm trung bình", () => {
+    const t = parseModelElement(el(`<p>@@SCORE NATIVE 61 | PRON 40 | FLU 70 | NAT 60 | GRA 72 | VOC 68</p>`));
+    expect(t.score?.[0].value).toBe("61");
+    expect(t.scoreRaw).toBeUndefined();
+  });
+  it("liveSections chỉ hiện nhãn của NOTES, không hiện nội dung", async () => {
+    const { liveSections } = await import("@/lib/parser");
+    const s = liveSections(el(html));
+    const notes = s.find((x) => x.label === "Giám khảo đang phân tích");
+    expect(notes?.text).toBe("");
+    expect(s.map((x) => x.text).join(" ")).not.toContain("NATIVE = 66");
+  });
+});

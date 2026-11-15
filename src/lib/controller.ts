@@ -3,6 +3,9 @@ import { applyPrompt, chatId, hydrate, liveNow, refreshTail, isGenerating, isHyd
 import { baseDiag } from "./diag";
 import type { LiveSection } from "./parser";
 import { DEFAULT_CONFIG } from "./langs";
+import { silentTail } from "./fluency";
+import { summaryMeta, turnMeta } from "./meta";
+import { scoreOf } from "./scoring";
 import { mic } from "./recorder";
 import { speak, speechStore, stopSpeaking } from "./speech";
 import { DEFAULT_PREFS, storage } from "./storage";
@@ -30,7 +33,7 @@ export interface AppState {
   sent: Record<number, SentRec>;
   playingRec: string | null;
   toast: { id: number; msg: string } | null;
-  dialog: null | "new" | "settings" | "notebook" | "model" | "donate" | "report";
+  dialog: null | "new" | "settings" | "notebook" | "model" | "donate" | "report" | "progress";
   reportPreset: { category?: CategoryId; note?: string } | null;
   /** true khi đang chụp màn hình: ẩn lớp hộp thoại */
   capturing: boolean;
@@ -131,6 +134,18 @@ async function beginNative() {
   if (!native.hasStop()) throw new Error(MIC_BLOCKED);
   if (!mic.tapped && perm !== "granted") throw new Error(MIC_BLOCKED);
   setRec({ state: "recording", startedAt: Date.now(), ms: 0, peaks: [] });
+  watchSilence();
+}
+/** Tự dừng khi im lặng ~2,5s sau khi đã nói (bật trong Cài đặt). */
+let silenceTimer = 0;
+function watchSilence() {
+  window.clearInterval(silenceTimer);
+  if (!get().prefs.autoStop) return;
+  silenceTimer = window.setInterval(() => {
+    if (get().rec.state !== "recording") { window.clearInterval(silenceTimer); return; }
+    mic.sample();
+    if (silentTail(mic.peaks)) { window.clearInterval(silenceTimer); toast("Đã tự dừng vì bạn im lặng. Nghe lại rồi gửi."); void stopRecording(); }
+  }, 250);
 }
 export const startRecording = () => guarded(async () => {
   stopSpeaking(); stopPlayback();
@@ -172,7 +187,9 @@ export const sendRecording = () => guarded(async () => {
   stopPlayback();
   const { rec } = get();
   setRec({ state: "sending" });
-  const idx = await native.send();
+  let meta = "";
+  try { meta = turnMeta(get().turns, rec.peaks, rec.ms); } catch { /* số đo chỉ là phụ */ }
+  const idx = await native.send(meta);
   if (rec.url) set({ sent: { ...get().sent, [idx]: { url: rec.url, ms: rec.ms, peaks: rec.peaks } } });
   setRec({ state: "idle", url: null, ms: 0, peaks: [] });
 }, "recorded");
@@ -184,7 +201,7 @@ const sendQuick = async (vi: string, en: string) => {
 export function quickLabel(text: string): { kind: "retry" | "skip" | "summary"; label: string } | null {
   if (/^(Phản hồi trước bị thiếu|Your previous reply was missing)/i.test(text)) return { kind: "retry", label: "Đã nhờ giám khảo trả lời lại" };
   if (/^(Câu khác|Next question)$/i.test(text)) return { kind: "skip", label: "Đã đổi sang câu hỏi khác" };
-  if (/^(Tổng kết buổi|Summarize session)$/i.test(text)) return { kind: "summary", label: "Đã yêu cầu tổng kết buổi" };
+  if (/^(Tổng kết buổi|Summarize session)(\s*\[NOIDI-META\].*)?$/is.test(text.trim())) return { kind: "summary", label: "Đã yêu cầu tổng kết buổi" };
   return null;
 }
 
@@ -266,7 +283,10 @@ export async function prepareCapture(mode: "ui" | "page"): Promise<() => void> {
 }
 
 export async function summarize() {
-  try { await sendText(get().session.output === "en" ? "Summarize session" : "Tổng kết buổi"); } catch (e) { toast((e as Error).message); }
+  const head = get().session.output === "en" ? "Summarize session" : "Tổng kết buổi";
+  let meta = "";
+  try { meta = summaryMeta(get().turns); } catch { /* */ }
+  try { await sendText(meta ? `${head}\n${meta}` : head); } catch (e) { toast((e as Error).message); }
 }
 
 /* ---------- buổi mới ---------- */
@@ -331,6 +351,17 @@ async function onRoute() {
 }
 
 let dupWarned = false;
+const autoRepaired = new Set<string>();
+
+/** Lưu lượt đã chấm để theo dõi tiến bộ giữa các buổi (không lưu bản tổng kết). */
+async function recordHistory(t: ModelTurn) {
+  const native = scoreOf(t.score, "NATIVE");
+  if (native === undefined || !t.transcript) return;
+  const { session, chatId: id } = get();
+  const sub: Record<string, number> = {};
+  t.score!.forEach((s) => { if (s.key !== "NATIVE") sub[s.key] = Number(s.value); });
+  try { await storage.addHistory({ id: `${id ?? "new"}:${t.key}`, at: Date.now(), lang: session.lang, mode: session.mode, level: session.level, native, sub }); } catch { /* */ }
+}
 let quietSince = 0;
 let wasGenerating = false;
 let lastSnack = "";
@@ -347,7 +378,8 @@ export function isStalledState(turns: Turn[], gen: boolean): boolean {
   if (last.role === "user" || last.empty) return true;
   const prevUser = [...turns].reverse().find((t) => t.role === "user");
   const askedSummary = prevUser?.role === "user" && /tổng kết|summari[sz]e/i.test(prevUser.text);
-  return !!(last.transcript || last.score) && !last.verdict && !last.q && !askedSummary;
+  // Đã chấm nhưng thiếu câu hỏi kế tiếp (kể cả khi đã có verdict): giao thức bị cắt.
+  return !!(last.transcript || last.score || last.verdict) && !last.q && !askedSummary;
 }
 function stallCheck(turns: Turn[], gen: boolean): boolean {
   if (!isStalledState(turns, gen)) { quietSince = 0; return false; }
@@ -405,9 +437,19 @@ function tick() {
     const settled = Date.now() - lastDomActivity() > 1500 && !isHydrating() && (get().rec.state === "idle" || get().rec.state === "recorded");
     if (last && last.role === "model" && !last.empty && settled && !played.has(last.key)) {
       played.add(last.key);
-      if (last.score) void countAnswer();
+      if (last.score) { void countAnswer(); void recordHistory(last); }
       if (get().prefs.autoPlay && (last.q || last.say)) playLatest(true);
     }
+  }
+
+  // Tự sửa giao thức: lượt đã chấm mà thiếu câu hỏi kế tiếp thì tự nhờ trả lời lại, một lần mỗi lượt.
+  const lastT = turns[turns.length - 1];
+  const userBefore = [...turns].reverse().find((t) => t.role === "user");
+  const afterRetry = userBefore?.role === "user" && quickLabel(userBefore.text)?.kind === "retry";
+  if (stalled && lastT?.role === "model" && !lastT.empty && !lastT.error && !afterRetry && !autoRepaired.has(lastT.key)) {
+    autoRepaired.add(lastT.key);
+    toast("Giám khảo trả lời thiếu phần cuối. Đang tự nhờ trả lời lại…");
+    void retryReply();
   }
 
   // đồng bộ khi hộp thoại gốc bị đóng bằng cách khác

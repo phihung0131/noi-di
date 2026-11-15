@@ -1,5 +1,5 @@
 import { useStore } from "@tanstack/react-store";
-import { BookMarked, ChevronDown, ClipboardList, Coffee, Cpu, Lock, Plus, RefreshCw, SlidersHorizontal, X } from "lucide-react";
+import { BookMarked, ChartLine, ChevronDown, ClipboardList, Coffee, Cpu, Lock, Plus, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import { appStore, isLocked, resync, setDialog, setOn, summarize } from "@/lib/controller";
 import { langChip, MODES } from "@/lib/langs";
 import type { ModelTurn } from "@/lib/types";
@@ -55,6 +55,7 @@ export function Header() {
         <Tip label="Đồng bộ lại: nạp lại toàn bộ cuộc trò chuyện từ AI Studio, không cần tải lại trang"><Button variant="outline" size="sm" aria-label="Đồng bộ lại với AI Studio" disabled={syncing} onClick={() => void resync()}><RefreshCw size={15} className={syncing ? "animate-spin" : ""} /><span className="hidden md:inline">{syncing ? "Đang đồng bộ" : "Đồng bộ"}</span></Button></Tip>
         {canSummarize && <Tip label="Tổng kết buổi: điểm mạnh, lỗi lặp lại, việc cần luyện"><Button variant="ghost" size="icon" aria-label="Tổng kết buổi" onClick={() => void summarize()}><ClipboardList size={18} /></Button></Tip>}
         <Tip label="Nói Đi miễn phí. Mời tác giả ly cà phê để mình làm tiếp"><Button variant="outline" size="sm" className="border-accent/50 bg-accent/10 hover:bg-accent/20" onClick={() => setDialog("donate")} aria-label="Mời tác giả ly cà phê"><Coffee size={15} className="text-accent" /><span className="hidden lg:inline">Ủng hộ</span></Button></Tip>
+        <Tip label="Tiến bộ qua các buổi"><Button variant="ghost" size="icon" aria-label="Tiến bộ qua các buổi" onClick={() => setDialog("progress")}><ChartLine size={18} /></Button></Tip>
         <Tip label="Sổ từ vựng"><Button variant="ghost" size="icon" aria-label="Sổ từ vựng" onClick={() => setDialog("notebook")}><BookMarked size={18} /></Button></Tip>
         <Tip label="Cài đặt"><Button variant="ghost" size="icon" aria-label="Cài đặt" onClick={() => setDialog("settings")}><SlidersHorizontal size={18} /></Button></Tip>
         <Button size="sm" className="ml-1" onClick={() => setDialog("new")}><Plus size={16} />Buổi mới</Button>

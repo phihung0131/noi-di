@@ -1,5 +1,29 @@
 # Nhật ký thay đổi
 
+## 1.1.1
+
+**Chấm điểm chính xác hơn**
+- **Tự tính lại điểm tổng** từ điểm từng tiêu chí theo đúng công thức và các giới hạn bắt buộc (PRON dưới 50, câu quá ngắn). Điểm của giám khảo lệch thì được sửa và ghi chú rõ.
+- **Số đo trôi chảy khách quan** từ sóng âm: thời lượng, thời gian có tiếng, số lần ngừng hơn 2 giây, tỉ lệ im lặng, tốc độ nói (từ/phút). Hiện dưới câu bạn nói và gửi kèm audio để giám khảo chấm trôi chảy theo số đo thật.
+- **Giám khảo nhớ lỗi qua các lượt:** mỗi lượt gửi kèm điểm lượt trước và các lỗi đã mắc, để chấm nhất quán và đánh dấu đúng lỗi lặp lại.
+- **Nháp chấm điểm ẩn (@@NOTES):** giám khảo phải liệt kê từng khoản trừ và phép tính trước khi in điểm, kể cả model không có chế độ suy nghĩ.
+- **Độ chắc chắn cho lỗi phát âm:** lỗi giám khảo chưa chắc được tách riêng thành "có thể lệch", tránh sửa nhầm âm bạn đã đọc đúng.
+- **Ví dụ một lượt hoàn chỉnh** cho từng chế độ trong prompt, giúp model nhẹ theo đúng giao thức.
+- **Tự sửa giao thức:** lượt đã chấm mà thiếu câu hỏi kế tiếp thì tự nhờ giám khảo trả lời lại (một lần).
+- Đặt temperature thấp khi nạp prompt (nếu dò thấy ô cài đặt) để điểm ổn định hơn.
+- Tổng kết buổi dùng điểm trung bình và xu hướng do tiện ích tự tính.
+
+**Nhận xét dễ dùng hơn**
+- **Tô chỗ đã sửa:** so từng từ giữa câu bạn nói và câu đã sửa (hoặc câu gốc khi đọc nhại).
+- Bảng lỗi được tách thành dữ liệu; **lưu lỗi vào sổ** chỉ với một nút.
+
+**Tính năng mới**
+- **Chế độ Đọc nhại (shadowing):** nghe câu người bản xứ rồi đọc lại y hệt, chấm phát âm, nhịp và độ khớp câu gốc (ACC).
+- **Tiến bộ qua các buổi:** số lượt đã chấm, chuỗi ngày luyện, trung bình 7 ngày, biểu đồ điểm và tiêu chí yếu nhất.
+- **Tự dừng khi im lặng** (bật trong Cài đặt).
+- **Xuất sổ từ vựng ra CSV** (Anki, Excel).
+- Gợi ý tình huống nhập vai khi tạo buổi mới.
+
 ## 1.1.0
 
 - **Prompt giáo viên thực thụ:** chấm điểm theo bảng trừ điểm bám bằng chứng, có giới hạn và kiểm tra nhất quán giữa các lượt; thẳng thắn, không khen xã giao.

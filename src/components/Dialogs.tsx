@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { listModels, type ModelInfo } from "@/lib/bridge";
 import { appStore, collectDiagnostics, isLocked, openReport, pickModel, prepareCapture, setDialog, startNewSession, updatePrefs } from "@/lib/controller";
 import { DonateView, ReportView } from "./Support";
-import { LANGS, LEVELS, MODES } from "@/lib/langs";
+import { LANGS, LEVELS, MODES, TOPIC_PRESETS } from "@/lib/langs";
 import { onVoices, voicesFor } from "@/lib/speech";
 import { storage } from "@/lib/storage";
 import type { Mode, SessionConfig } from "@/lib/types";
@@ -34,7 +34,7 @@ export function NewSessionDialog() {
           <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void startNewSession({ ...c, topic: c.topic.trim() }); }}>
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">Chế độ</legend>
-              <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
+              <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
                 {MODES.map((m) => {
                   return (
                     <Tip key={m.id} side="top" label={m.detail}><button type="button" role="radio" aria-checked={c.mode === m.id} onClick={() => upd({ mode: m.id as Mode })}
@@ -53,6 +53,15 @@ export function NewSessionDialog() {
               <Field label="Chủ đề (tuỳ chọn)">
                 <input value={c.topic} onChange={(e) => upd({ topic: e.target.value })} placeholder="Ví dụ: du lịch, công việc, công nghệ" className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
               </Field>
+            </div>
+            <div className="space-y-1.5">
+              <span className="text-xs text-muted-foreground">Gợi ý tình huống nhập vai</span>
+              <div className="flex flex-wrap gap-1.5">
+                {TOPIC_PRESETS.map((tp) => (
+                  <button key={tp} type="button" onClick={() => upd({ topic: c.topic === tp ? "" : tp })} aria-pressed={c.topic === tp}
+                    className={cn("rounded-full border px-2.5 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", c.topic === tp ? "border-primary bg-primary/10" : "border-border hover:bg-muted")}>{tp}</button>
+                ))}
+              </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="ghost" onClick={() => setDialog(null)}>Huỷ</Button>
@@ -92,6 +101,7 @@ export function SettingsDialog() {
           </Field>
           <div className={row}><div><div className="text-sm font-medium">Tự đọc câu hỏi mới</div><div className="text-xs text-muted-foreground">Nghe giám khảo nói như hội thoại thật.</div></div><Switch label="Tự đọc câu hỏi mới" checked={prefs.autoPlay} onCheckedChange={(v) => void updatePrefs({ autoPlay: v })} /></div>
           <div className={row}><div><div className="text-sm font-medium">Chế độ nghe</div><div className="text-xs text-muted-foreground">Che chữ câu hỏi, chỉ nghe rồi trả lời.</div></div><Switch label="Chế độ nghe" checked={prefs.listenOnly} onCheckedChange={(v) => void updatePrefs({ listenOnly: v })} /></div>
+          <div className={row}><div><div className="text-sm font-medium">Tự dừng khi im lặng</div><div className="text-xs text-muted-foreground">Dừng ghi âm khi bạn im lặng khoảng 2,5 giây sau khi đã nói. Bạn vẫn nghe lại rồi mới gửi.</div></div><Switch label="Tự dừng khi im lặng" checked={prefs.autoStop} onCheckedChange={(v) => void updatePrefs({ autoStop: v })} /></div>
           <div className={row}><div><div className="text-sm font-medium">Tự hiện bản dịch</div></div><Switch label="Tự hiện bản dịch" checked={prefs.showTrans} onCheckedChange={(v) => void updatePrefs({ showTrans: v })} /></div>
           <Field label="Giao diện"><Select ariaLabel="Giao diện" value={prefs.theme} onChange={(v) => void updatePrefs({ theme: v as "auto" | "light" | "dark" })} options={[{ value: "auto", label: "Theo hệ thống" }, { value: "light", label: "Sáng" }, { value: "dark", label: "Tối" }]} /></Field>
           <p className="text-xs leading-relaxed text-muted-foreground">Phím tắt: Alt+R ghi/dừng · Alt+P nghe lại · Alt+Enter gửi · Alt+L nghe lại câu hỏi.</p>
