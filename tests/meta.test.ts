@@ -48,3 +48,17 @@ describe("xuất CSV", () => {
     expect(csv.split("\n")[1]).toBe('"say ""hi"", ok",chào,vocab,en-US,1970-01-01');
   });
 });
+
+describe("sổ từ vựng", () => {
+  it("lưu nhiều mục cùng lúc không đè mất nhau", async () => {
+    const { addNote } = await import("@/lib/notes");
+    const { storage } = await import("@/lib/storage");
+    await storage.setNotes([]);
+    await Promise.all([
+      addNote({ text: "entire weekend", tr: "a", lang: "en-US", kind: "error" }),
+      addNote({ text: "spent", tr: "b", lang: "en-US", kind: "error" }),
+      addNote({ text: "laundry", tr: "c", lang: "en-US", kind: "error" }),
+    ]);
+    expect((await storage.notes()).map((n) => n.text).sort()).toEqual(["entire weekend", "laundry", "spent"]);
+  });
+});
