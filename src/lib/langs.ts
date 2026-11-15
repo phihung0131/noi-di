@@ -33,6 +33,8 @@ export const MODES = [
     detail: "Bạn nghe một đoạn 2–4 câu (không thấy chữ), rồi trả lời câu hỏi kiểm tra hiểu bằng giọng nói. Chữ chỉ hiện sau khi bạn trả lời. Được chấm theo mức hiểu ý chính, không chấm phát âm." },
   { id: "shadow", label: "Đọc nhại", hint: "Nghe câu mẫu rồi đọc lại y hệt",
     detail: "Giám khảo đưa một câu tự nhiên của người bản xứ. Bạn nghe (có bản chậm), rồi đọc to y hệt cả nhịp và ngữ điệu. Vì đã biết câu gốc nên chấm phát âm chính xác nhất: từng từ đọc sai, bỏ sót, sai trọng âm. Đạt 70 mới sang câu mới." },
+  { id: "exam", label: "Luyện thi", hint: "IELTS, TOPIK 말하기, HSKK theo đúng cấu trúc đề",
+    detail: "Mô phỏng bài thi nói theo đúng cấu trúc phần, thời gian chuẩn bị và thời gian nói của đề thật; chấm theo tiêu chí của kỳ thi (IELTS: band 0–9). Có cho English (IELTS), tiếng Hàn (TOPIK 말하기), tiếng Trung (HSKK). Điểm là ước lượng để luyện tập." },
 ] as const;
 /** Gợi ý chủ đề / tình huống nhập vai cho ô "Chủ đề". */
 export const TOPIC_PRESETS = [

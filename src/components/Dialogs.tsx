@@ -5,6 +5,8 @@ import { listModels, type ModelInfo } from "@/lib/bridge";
 import { appStore, collectDiagnostics, isLocked, openReport, pickModel, prepareCapture, setDialog, startNewSession, updatePrefs } from "@/lib/controller";
 import { DonateView, ReportView } from "./Support";
 import { LANGS, LEVELS, MODES, TOPIC_PRESETS } from "@/lib/langs";
+import { asrSupported } from "@/lib/asr";
+import { examOf, examsFor } from "@/lib/exams";
 import { onVoices, voicesFor } from "@/lib/speech";
 import { storage } from "@/lib/storage";
 import type { Mode, SessionConfig } from "@/lib/types";
@@ -20,6 +22,7 @@ const STRICT_HINT: Record<Mode, string> = {
   shadow: "Chỉ sang câu mới khi đọc đủ và đúng từng từ của câu gốc, khớp câu gốc từ 95 trở lên.",
   listening: "Chỉ sang đoạn mới khi trả lời đúng mọi chi tiết của đoạn nghe.",
   chat: "",
+  exam: "",
 };
 
 const Field = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
@@ -38,7 +41,7 @@ export function NewSessionDialog() {
     <Dialog open={open} onOpenChange={(o) => setDialog(o ? "new" : null)}>
       <DialogContent title="Buổi luyện mới" description="Thiết lập này được giữ nguyên suốt buổi. Muốn đổi, bạn tạo buổi mới." wide>
         {c && (
-          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void startNewSession({ ...c, topic: c.topic.trim() }); }}>
+          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void startNewSession({ ...c, topic: c.topic.trim(), exam: c.mode === "exam" ? examOf(c.exam, c.lang)?.id : undefined }); }}>
             <fieldset className="space-y-2">
               <legend className="text-sm font-medium">Chế độ</legend>
               <div className="grid gap-2 sm:grid-cols-2" role="radiogroup">
@@ -61,7 +64,14 @@ export function NewSessionDialog() {
                 <input value={c.topic} onChange={(e) => upd({ topic: e.target.value })} placeholder="Ví dụ: du lịch, công việc, công nghệ" className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
               </Field>
             </div>
-            {c.mode !== "chat" && (
+            {c.mode === "exam" && (examsFor(c.lang).length ? (
+              <Field label="Kỳ thi" hint="Đúng cấu trúc phần, thời gian chuẩn bị và thời gian nói của đề thật. Điểm là ước lượng để luyện, không phải điểm chính thức.">
+                <Select ariaLabel="Kỳ thi" value={examOf(c.exam, c.lang)!.id} onChange={(v) => upd({ exam: v })} options={examsFor(c.lang).map((e) => ({ value: e.id, label: e.name }))} />
+              </Field>
+            ) : (
+              <p className="rounded-lg border border-border p-3 text-sm text-muted-foreground">Luyện thi hiện có cho English (IELTS Speaking), tiếng Hàn (TOPIK 말하기) và tiếng Trung (HSKK). Hãy chọn một trong các ngôn ngữ này.</p>
+            ))}
+            {c.mode !== "chat" && c.mode !== "exam" && (
               <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
                 <div>
                   <div className="text-sm font-medium">Luyện tới khi đúng</div>
@@ -81,7 +91,7 @@ export function NewSessionDialog() {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="ghost" onClick={() => setDialog(null)}>Huỷ</Button>
-              <Button type="submit">Bắt đầu buổi mới</Button>
+              <Button type="submit" disabled={c.mode === "exam" && !examsFor(c.lang).length}>Bắt đầu buổi mới</Button>
             </div>
           </form>
         )}
@@ -118,6 +128,9 @@ export function SettingsDialog() {
           <div className={row}><div><div className="text-sm font-medium">Tự đọc câu hỏi mới</div><div className="text-xs text-muted-foreground">Nghe giám khảo nói như hội thoại thật.</div></div><Switch label="Tự đọc câu hỏi mới" checked={prefs.autoPlay} onCheckedChange={(v) => void updatePrefs({ autoPlay: v })} /></div>
           <div className={row}><div><div className="text-sm font-medium">Chế độ nghe</div><div className="text-xs text-muted-foreground">Che chữ câu hỏi, chỉ nghe rồi trả lời.</div></div><Switch label="Chế độ nghe" checked={prefs.listenOnly} onCheckedChange={(v) => void updatePrefs({ listenOnly: v })} /></div>
           <div className={row}><div><div className="text-sm font-medium">Tự dừng khi im lặng</div><div className="text-xs text-muted-foreground">Dừng ghi âm khi bạn im lặng khoảng 2,5 giây sau khi đã nói. Bạn vẫn nghe lại rồi mới gửi.</div></div><Switch label="Tự dừng khi im lặng" checked={prefs.autoStop} onCheckedChange={(v) => void updatePrefs({ autoStop: v })} /></div>
+          {asrSupported() && (
+            <div className={row}><div><div className="text-sm font-medium">Đối chiếu bằng nhận dạng giọng nói của Chrome</div><div className="text-xs text-muted-foreground">Khi ghi âm, Chrome gửi giọng nói tới dịch vụ nhận dạng của Google (không phải AI Studio) để có thêm một bản chép lời độc lập. Giúp phát hiện khi giám khảo chép sai hoặc sửa giùm lời bạn. Tắt thì không gửi gì thêm.</div></div><Switch label="Đối chiếu bằng nhận dạng giọng nói của Chrome" checked={prefs.asrCheck} onCheckedChange={(v) => void updatePrefs({ asrCheck: v })} /></div>
+          )}
           <div className={row}><div><div className="text-sm font-medium">Tự hiện bản dịch</div></div><Switch label="Tự hiện bản dịch" checked={prefs.showTrans} onCheckedChange={(v) => void updatePrefs({ showTrans: v })} /></div>
           <Field label="Giao diện"><Select ariaLabel="Giao diện" value={prefs.theme} onChange={(v) => void updatePrefs({ theme: v as "auto" | "light" | "dark" })} options={[{ value: "auto", label: "Theo hệ thống" }, { value: "light", label: "Sáng" }, { value: "dark", label: "Tối" }]} /></Field>
           <p className="text-xs leading-relaxed text-muted-foreground">Phím tắt: Alt+R ghi/dừng · Alt+P nghe lại · Alt+Enter gửi · Alt+L nghe lại câu hỏi.</p>

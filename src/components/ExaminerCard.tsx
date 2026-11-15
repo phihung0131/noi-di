@@ -3,6 +3,7 @@ import { Activity, AlertTriangle, BookmarkPlus, ChevronDown, Dumbbell, EyeOff, E
 import { memo, useEffect, useRef, useState } from "react";
 import { appStore, openReport, playAB, practiceAgain, retryReply, setDialog, skipQuestion, switchModelAndRetry, toast, type SentRec } from "@/lib/controller";
 import { diffWords } from "@/lib/diff";
+import { examOf } from "@/lib/exams";
 import { analyzePeaks, speechRate } from "@/lib/fluency";
 import { speechStore, stopSpeaking } from "@/lib/speech";
 import { useNoteActions } from "@/lib/notes";
@@ -78,6 +79,23 @@ function PronList({ items, idp, lang }: { items: string[]; idp: string; lang: st
 }
 
 /** So từng từ: chữ gạch là phần bạn nói bị bỏ/đổi, chữ tô xanh là phần cần nói. */
+/** Bản chép lời độc lập của Chrome: chỉ hiện khi khác transcript của giám khảo. */
+function AsrCheck({ asr, transcript }: { asr: string; transcript: string }) {
+  const ops = diffWords(asr, transcript);
+  const n = ops.filter((o, i) => o.op !== "same" && (i === 0 || ops[i - 1].op === "same")).length;
+  if (!n) return <p className="text-xs text-muted-foreground">Nhận dạng của Chrome khớp với lời giám khảo chép.</p>;
+  return (
+    <div className="rounded-md border border-border bg-muted/40 p-2 text-xs">
+      <p className="text-muted-foreground">Chrome nghe được (khác {n} chỗ, nghe lại bản ghi để biết ai đúng):</p>
+      <p className="mt-1 font-serif text-sm">
+        {ops.map((o, i) => o.op === "same" ? <span key={i}>{o.text} </span>
+          : o.op === "del" ? <mark key={i} className="rounded bg-accent/30 px-0.5 text-foreground">{o.text} </mark>
+          : null)}
+      </p>
+    </div>
+  );
+}
+
 /** Nghe so sánh: bản ghi của bạn (A) rồi câu đúng (B), để tự nghe ra chỗ khác. */
 function ABButton({ id, url, text }: { id: string; url: string; text: string }) {
   const playing = useStore(appStore, (s) => s.playingRec === id);
@@ -218,6 +236,14 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
   const mode = useStore(appStore, (s) => s.session.mode);
   const strict = useStore(appStore, (s) => !!s.session.strict && s.session.mode !== "chat");
   const strictLeft = strict ? strictIssues(mode, turn) : [];
+  // Luyện thi: tên phần hiện tại (phần được in ở lượt này hoặc gần nhất trước đó).
+  const part = useStore(appStore, (s) => {
+    if (s.session.mode !== "exam") return undefined;
+    const i = s.turns.findIndex((x) => x.key === turn.key);
+    const n = s.turns.slice(0, i + 1).reverse().find((x): x is ModelTurn => x.role === "model" && !!x.part)?.part;
+    const e = examOf(s.session.exam, s.session.lang);
+    return n ? e?.tasks.find((k) => String(k.part) === n)?.name ?? `Phần ${n}` : undefined;
+  });
   const listenOnly = useStore(appStore, (s) => s.prefs.listenOnly);
   const showTrans = useStore(appStore, (s) => s.prefs.showTrans);
   const lang = useLang();
@@ -232,7 +258,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
 
   const simpleFb = !!t.feedback && !t.transcript && !t.fixed && !t.better && !t.drill && !t.score && !t.vocab?.length && !t.pron?.length && !t.verdict;
   const hasReview = !simpleFb && !!(t.transcript || t.fixed || t.better || t.drill || t.score || t.feedback || t.vocab?.length || t.pron?.length || t.verdict);
-  const concealSay = !!t.say && mode === "listening" && !answered && !open.reveal;
+  const concealSay = !!t.say && (mode === "listening" || mode === "exam") && !answered && !open.reveal;
   const concealQ = !!t.q && latest && listenOnly && !open.reveal;
   const fbOpen = open.fb ?? latest;
   const trOpen = open.tr ?? showTrans;
@@ -271,6 +297,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             </blockquote>
           )}
           {t.transcript && rec && <FluencyStats rec={rec} transcript={t.transcript} />}
+          {t.transcript && rec?.asr && <AsrCheck asr={rec.asr} transcript={t.transcript} />}
           {t.score && !pending("SCORE") && <Score items={t.score} raw={t.scoreRaw} />}
           {pending("SCORE") && <Skeleton label="Đang chấm điểm" />}
           {recording && !!(t.fixed || t.better || t.drill || t.feedback || t.pron?.length || t.vocab?.length) && <Concealed title="Câu đã sửa, câu người bản xứ sẽ nói, chi tiết lỗi và bài tập" />}
@@ -307,7 +334,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
 
       {t.say && (
         <section className="rounded-lg border border-border bg-card p-4">
-          <p className="mb-2 text-sm text-muted-foreground">{mode === "listening" ? "Đoạn nghe" : mode === "chat" ? "Bạn trò chuyện nói" : "Giám khảo nói"}</p>
+          <p className="mb-2 text-sm text-muted-foreground">{mode === "listening" || mode === "exam" ? "Đoạn nghe" : mode === "chat" ? "Bạn trò chuyện nói" : "Giám khảo nói"}</p>
           {concealSay ? (
             <p className="font-serif text-lg text-muted-foreground">Nghe kỹ, chữ sẽ hiện sau khi bạn trả lời.</p>
           ) : (
@@ -325,6 +352,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
         <section className={cn("rounded-lg border bg-card p-5", latest ? "border-primary/50" : "border-border")}>
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             {t.q.n && <span className="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">Câu {t.q.n}</span>}
+            {mode === "exam" && part && <span className="rounded-full border border-border px-2 py-0.5 font-medium">{part}</span>}
             {mode === "shadow" && <span>Nghe rồi đọc lại y hệt, cả nhịp và ngữ điệu</span>}
           </div>
           <div className={cn(concealQ && "select-none blur-md")} onClick={concealQ ? () => tgl("reveal") : undefined} aria-hidden={concealQ}>
@@ -339,6 +367,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             {t.hint && !pending("HINT") && <Button variant={open.hint ? "default" : "ghost"} size="sm" onClick={() => tgl("hint")} aria-pressed={!!open.hint}><Lightbulb size={16} />Gợi ý</Button>}
             {t.sample && !pending("SAMPLE") && !pending("SAMPLETR") && <Button variant={open.sample ? "default" : "ghost"} size="sm" onClick={() => tgl("sample")} aria-pressed={!!open.sample}><MessageSquareQuote size={16} />Câu mẫu</Button>}
             {t.prep && latest && <Prep seconds={t.prep} />}
+            {t.limit && latest && <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground" title="Hết giờ thì ghi âm tự dừng"><Timer size={13} />Nói tối đa {fmtTime(t.limit * 1000)}</span>}
             {latest && !streaming && <Button variant="ghost" size="sm" className="ml-auto" onClick={() => void skipQuestion()}><RefreshCw size={16} />Câu khác</Button>}
           </div>
           {t.tr && <Fold open={trOpen}><p className="text-[15px] text-muted-foreground">{t.tr}</p></Fold>}

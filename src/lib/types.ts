@@ -1,4 +1,4 @@
-export type Mode = "guided" | "chat" | "listening" | "shadow";
+export type Mode = "guided" | "chat" | "listening" | "shadow" | "exam";
 export type OutLang = "vi" | "en";
 
 export interface SessionConfig {
@@ -9,6 +9,8 @@ export interface SessionConfig {
   topic: string;
   /** Luyện tới khi đúng: chỉ qua câu mới khi nói đúng hết, không chỉ đủ điểm (không áp dụng cho Hội thoại). */
   strict?: boolean;
+  /** Chế độ luyện thi: kỳ thi (src/lib/exams.ts), mặc định kỳ thi đầu tiên của ngôn ngữ */
+  exam?: string;
 }
 
 export interface Prefs {
@@ -20,6 +22,8 @@ export interface Prefs {
   theme: "auto" | "light" | "dark";
   /** Tự dừng ghi âm khi im lặng khoảng 2,5 giây sau khi đã nói */
   autoStop: boolean;
+  /** Đối chiếu bằng nhận dạng giọng nói của Chrome (gửi giọng nói tới dịch vụ nhận dạng của Google) */
+  asrCheck: boolean;
 }
 
 export interface ScoreItem { key: string; value: string }
@@ -56,6 +60,8 @@ export interface ModelTurn {
   pron?: string[];
   verdict?: "pass" | "retry";
   prep?: number;
+  /** Luyện thi: số giây nói tối đa cho lượt này */
+  limit?: number;
   /** Tên mục (marker) đang được model viết dở; undefined khi đã xong */
   open?: string;
   /** Lỗi AI Studio in trong lượt này (vd. rate limit) */

@@ -1,6 +1,7 @@
 import { LANGS } from "./langs";
 import type { SessionConfig } from "./types";
-import { EXAMPLES } from "./prompt-examples";
+import { EXAMPLES, examExample } from "./prompt-examples";
+import { examOf, type ExamSpec } from "./exams";
 
 const OUT = { vi: "tiếng Việt", en: "English" } as const;
 
@@ -13,12 +14,36 @@ export function buildPrompt(c: SessionConfig): string {
   const L = LANGS[c.lang] ?? LANGS["en-US"];
   const out = OUT[c.output];
   const mode = c.mode;
+  const exam = mode === "exam" ? examOf(c.exam, c.lang) : undefined;
+  const fmtSec = (n: number) => (n >= 60 ? `${Math.floor(n / 60)} phút${n % 60 ? ` ${n % 60} giây` : ""}` : `${n} giây`);
+  const taskLine = (t: ExamSpec["tasks"][number]) =>
+    `- @@PART ${t.part} · ${t.name}: ${t.items} câu. ${t.prep ? `Chuẩn bị ${fmtSec(t.prep)} (@@PREP ${t.prep}). ` : "Không có thời gian chuẩn bị. "}Nói tối đa ${fmtSec(t.limit)} (@@LIMIT ${t.limit}).${t.listen ? " Phần nghe: nội dung phát trong @@SAY (học viên KHÔNG thấy chữ tới khi trả lời xong)." : ""} ${t.brief}`;
+  const examFlow = (e: ExamSpec) => `# Cấu trúc buổi thi thử ${e.name}
+Theo đúng thứ tự các phần dưới đây. Số câu, thời gian chuẩn bị và thời gian nói phải đúng như ghi:
+${e.tasks.map(taskLine).join("\n")}
+- Mỗi câu hỏi in kèm @@LIMIT (và @@PREP nếu phần đó có chuẩn bị). Giao diện tự đếm giờ và tự dừng ghi âm khi hết giờ nói.
+- Đề bằng ${L.short}, đúng văn phong và độ khó của đề thật (không dễ hoá). Chủ đề đa dạng${c.topic ? `, ưu tiên liên quan: ${c.topic}` : ""}; không lặp chủ đề đã dùng trong buổi.
+- Đây là thi thử để luyện: sau mỗi câu trả lời vẫn chấm và chữa bài đầy đủ như Bước 2, nhưng KHÔNG bắt nói lại (thi thật không được làm lại câu).
+- Trình độ hiện tại của học viên (${c.level}) chỉ dùng để viết @@SAMPLE vừa sức hơn một bậc; KHÔNG hạ độ khó của đề.`;
+  const examNext = (e: ExamSpec) => `9. @@VERDICT pass (luyện thi không bắt nói lại, trừ trường hợp ở Bước 0). Rồi sang câu kế tiếp theo "Cấu trúc buổi thi thử": còn câu trong phần hiện tại thì @@Q <số kế tiếp> cùng phần; hết số câu của phần thì in @@PART <phần kế> trước @@Q. Sau câu cuối của phần ${e.tasks[e.tasks.length - 1].part}, nhắc trong @@FEEDBACK rằng đã hết một lượt đề và có thể bấm "Tổng kết" để xem kết quả ước lượng toàn bài, rồi bắt đầu lượt đề mới từ @@PART ${e.tasks[0].part} với chủ đề khác. Số @@Q tăng liên tục trong cả buổi. Sau @@Q luôn có @@TR${L.roman ? ", @@ROMAN" : ""}, @@PREP (nếu có), @@LIMIT, @@HINT, @@SAMPLE, @@SAMPLETR; phần nghe thì @@SAY đứng trước @@Q.`;
+  const examScoring = (e: ExamSpec) => `# Cách chấm ${e.name} (nghiêm khắc, bám bằng chứng)
+Bạn nghe audio thật, nên chấm phát âm, ngữ điệu và độ trôi chảy từ chính giọng học viên. Đây là ƯỚC LƯỢNG để luyện thi, không phải điểm chính thức; nói rõ điều này trong bản tổng kết.
+${e.rubric}
+- Trừ điểm từ lỗi bạn đã liệt kê ở Bước 1, không chấm theo cảm giác. Mỗi tiêu chí phải có ít nhất một bằng chứng trong @@NOTES.
+- Nhất quán giữa các lượt: cùng chất lượng thì cùng mức điểm; điểm chỉ thay đổi khi có bằng chứng rõ trong audio.
+- Không nói đủ thời lượng yêu cầu của câu là lỗi hoàn thành nhiệm vụ: trừ vào ${e.id === "ielts" ? "FC" : "TASK"}.
+- Độ chắc chắn: chỉ trừ phát âm cho lỗi bạn THẬT SỰ nghe rõ trong audio. Không chắc thì không trừ và không đưa vào @@PRON.
+- Phần mềm tự tính lại điểm tổng theo đúng công thức trên; điểm tổng lệch sẽ bị sửa và hiện cho học viên thấy.
+- Bản tổng kết ("Tổng kết buổi"): in @@SCORE là điểm trung bình các lượt theo cùng định dạng${e.id === "ielts" ? "; BAND tổng lấy band_overall trong [NOIDI-META] nếu có (đã làm tròn theo quy tắc IELTS)" : ""}; trong @@FEEDBACK nêu phần nào mạnh/yếu nhất và 3 việc cần luyện để tăng điểm.`;
+  const examStart = (e: ExamSpec) => `Không hỏi thêm về thiết lập. Bắt đầu thi thử ${e.name}: in @@PART ${e.tasks[0].part}, ${e.tasks[0].listen ? "@@SAY (nội dung nghe), " : ""}@@Q 1 (câu đầu tiên của phần ${e.tasks[0].part}), @@TR${L.roman ? ", @@ROMAN" : ""}, ${e.tasks[0].prep ? `@@PREP ${e.tasks[0].prep}, ` : ""}@@LIMIT ${e.tasks[0].limit}, @@HINT, @@SAMPLE, @@SAMPLETR. Thêm @@FEEDBACK chỉ gồm 1–2 dòng bằng ${out} (không mở đầu bằng "Nhận định"): giới thiệu ngắn cấu trúc bài thi (số phần, thời gian) và nhắc rằng hết giờ nói thì ghi âm tự dừng. KHÔNG in @@VERDICT.`;
+
 
   const role = {
     guided: `Bạn là giáo viên ${L.name} bản xứ thực thụ, hơn 15 năm dạy phát âm và giao tiếp, kiêm giám khảo. Học viên trả lời bằng audio và bạn NGHE TRỰC TIẾP audio đó.`,
     chat: `Bạn là giáo viên ${L.name} bản xứ thực thụ, đang nhập vai một người bạn để luyện phản xạ. Học viên trả lời bằng audio và bạn NGHE TRỰC TIẾP audio đó.`,
     listening: `Bạn là giáo viên nghe hiểu ${L.name} bản xứ thực thụ. Bạn nói một đoạn ngắn, học viên nghe (không thấy chữ) rồi trả lời bằng audio, và bạn NGHE TRỰC TIẾP audio đó.`,
     shadow: `Bạn là huấn luyện viên phát âm ${L.name} bản xứ thực thụ, hơn 15 năm luyện giọng cho người học. Học viên đọc nhại (shadowing) đúng câu bạn đưa ra, bằng audio, và bạn NGHE TRỰC TIẾP audio đó rồi so với câu gốc.`,
+    exam: `Bạn là giám khảo ${exam?.name ?? "thi nói"} giàu kinh nghiệm, kiêm huấn luyện viên luyện thi. Bạn ra đề và điều phối buổi thi thử theo ĐÚNG cấu trúc, thời gian và tiêu chí của ${exam?.name ?? "kỳ thi"}, rồi sau mỗi câu trả lời chấm và chữa bài như huấn luyện viên. Học viên trả lời bằng audio và bạn NGHE TRỰC TIẾP audio đó.`,
   }[mode];
 
   const flow = {
@@ -39,9 +64,10 @@ export function buildPrompt(c: SessionConfig): string {
 - Học viên nghe giọng đọc của máy (có bản chậm) rồi đọc to y hệt câu đó, cả nhịp, trọng âm và ngữ điệu. Bạn so TỪNG TỪ với câu gốc.
 - Chọn câu chứa âm và hiện tượng khó của ${L.short}: ${L.focus}
 - Đọc đạt thì câu sau dài hơn hoặc khó hơn một chút; câu mới ưu tiên chứa đúng âm học viên hay sai.`,
+    exam: exam ? examFlow(exam) : "",
   }[mode];
 
-  const scoreFmt = mode === "listening"
+  const scoreFmt = exam ? exam.scoreFmt : mode === "listening"
     ? `@@SCORE NATIVE 62 | HIEU 80 | TRALOI 70 | PRON 60 | FLU 65`
     : mode === "shadow"
     ? `@@SCORE NATIVE 74 | PRON 68 | FLU 74 | ACC 84`
@@ -74,6 +100,7 @@ Tin nhắn audio của học viên có thể kèm một dòng chữ bắt đầu
 - speech dưới 3s trong khi câu hỏi cần nguyên câu: xử lý như câu trả lời quá ngắn.
 - prev_score: điểm lượt trước, đã được phần mềm tính lại đúng công thức. Dùng để giữ quy tắc "Nhất quán giữa các lượt".
 - errors_so_far, recent: lỗi đã ghi nhận ở các lượt trước. Học viên mắc lại thì ghi "LỖI LẶP LẠI" trong cột Vì sao; đã sửa được thì ghi nhận cụ thể trong @@FEEDBACK.
+- asr_check: bản chép lời độc lập do trình duyệt tự nhận dạng từ cùng giọng nói (không phải lời học viên gõ). Dùng để ĐỐI CHIẾU khi viết @@TRANSCRIPT: chỗ nào bạn nghe khác asr_check thì nghe lại kỹ audio đoạn đó. Nếu asr_check giữ một lỗi (ví dụ "I visit") thì gần như chắc học viên đã nói đúng như vậy, không được sửa giùm trong @@TRANSCRIPT. asr_check có thể nghe nhầm từ khi phát âm chưa chuẩn và thường không có dấu câu: khi audio rõ ràng khác thì tin audio; đừng chép nguyên asr_check. Không nhắc tên trường này trong nhận xét.
 - Chữ đi kèm audio như "(Câu trả lời của tôi nằm trong audio. / My answer is in the audio.)" cũng do phần mềm thêm, không phải lời học viên.
 - Tin nhắn "Tổng kết buổi" / "Summarize session" có thể kèm [NOIDI-META] scored_turns, avg, first, last, best, worst: đó là số liệu chính xác của cả buổi.
 
@@ -129,14 +156,14 @@ ${mode === "chat" ? `Bước 2, in kết quả theo đúng thứ tự. Hội tho
 2. @@SCORE: xem "Cách chấm".
 3. @@FIXED: BẢN SỬA ĐẦY ĐỦ. Viết lại TOÀN BỘ câu trả lời của học viên (không bỏ sót câu nào), chỉ sửa lỗi, giữ nguyên ý và từ ngữ của họ ở chỗ đã đúng. Đây là "câu đúng của chính bạn".
 4. @@BETTER: BẢN NGƯỜI BẢN XỨ. Cùng ý, độ dài tương đương, nhưng nói như người bản xứ ở mức ${c.level} thật sự sẽ nói: cụm từ tự nhiên, nối câu, rút gọn đời thường. Đây là đích để học.
-5. @@FEEDBACK: bắt đầu bằng "Nhận định:" 1–2 câu thẳng thắn về trình độ thực tế. Sau đó là MỘT bảng markdown liệt kê TẤT CẢ lỗi đáng kể (tối đa 8 dòng, xếp lỗi nghiêm trọng nhất lên trên) với 4 cột đúng thứ tự: "Loại | Bạn nói | Sửa thành | Vì sao" (Loại = Phát âm, Ngữ pháp, Từ vựng, Tự nhiên hoặc Trôi chảy; "Vì sao" nêu quy tắc hoặc âm cụ thể, 1 câu). Lỗi lặp lại giữa các lượt ghi "LỖI LẶP LẠI" trong cột Vì sao. Sau bảng: 1–2 gạch đầu dòng về điểm làm tốt (chỉ khi có bằng chứng cụ thể), và 1 dòng "Điểm trừ lớn nhất:" nói rõ tiêu chí nào kéo NATIVE xuống nhiều nhất. Phải khớp với điểm đã chấm.
+5. @@FEEDBACK: bắt đầu bằng "Nhận định:" 1–2 câu thẳng thắn về trình độ thực tế. Sau đó là MỘT bảng markdown liệt kê TẤT CẢ lỗi đáng kể (tối đa 8 dòng, xếp lỗi nghiêm trọng nhất lên trên) với 4 cột đúng thứ tự: "Loại | Bạn nói | Sửa thành | Vì sao" (Loại = Phát âm, Ngữ pháp, Từ vựng, Tự nhiên hoặc Trôi chảy; "Vì sao" nêu quy tắc hoặc âm cụ thể, 1 câu). Lỗi lặp lại giữa các lượt ghi "LỖI LẶP LẠI" trong cột Vì sao. Sau bảng: 1–2 gạch đầu dòng về điểm làm tốt (chỉ khi có bằng chứng cụ thể), và 1 dòng "Điểm trừ lớn nhất:" nói rõ tiêu chí nào kéo ${exam ? "điểm tổng" : "NATIVE"} xuống nhiều nhất. Phải khớp với điểm đã chấm.
 6. @@PRON: 1–4 từ hoặc cụm bạn NGHE THẤY phát âm lệch (chỉ khi thật sự nghe được lỗi), mỗi mục đúng dạng "từ ${L.short} — cách đọc đúng — lỗi học viên mắc". Phần đầu BẮT BUỘC là một từ/cụm bằng ${L.short} (sẽ được đọc thành tiếng), không phải mô tả bằng ${out}.
 7. @@VOCAB: 2–4 cách nói tự nhiên hơn, mỗi mục "cụm từ ${L.short} — nghĩa ngắn" (lấy từ chính câu học viên vừa nói khi có thể).
 8. @@DRILL: đúng 1 bài tập để sửa lỗi quan trọng nhất ngay bây giờ: 1–2 câu ngắn bằng ${L.short} cho học viên đọc to 3 lần (chọn câu chứa chính âm hoặc cấu trúc họ sai), sau đó 1 dòng hướng dẫn bằng ${out} nói cách đặt miệng, trọng âm hoặc nhịp.
-9. @@VERDICT pass hoặc retry. pass (NATIVE từ 55 trở lên và trả lời đủ ý) → sang câu mới, câu mới phải nhắm vào lỗi hay gặp của học viên. Dù đã retry nhiều lần cũng KHÔNG tự cho qua; nếu học viên đã retry từ 2 lần, nhắc trong @@FEEDBACK rằng có thể bấm nút “Câu khác” để đổi câu hỏi. retry → yêu cầu nói lại cùng câu, nêu đúng 1–2 điểm cần sửa, KHÔNG đưa câu mới (in lại @@Q cũ, cùng số).
+${exam ? examNext(exam) : `9. @@VERDICT pass hoặc retry. pass (NATIVE từ 55 trở lên và trả lời đủ ý) → sang câu mới, câu mới phải nhắm vào lỗi hay gặp của học viên. Dù đã retry nhiều lần cũng KHÔNG tự cho qua; nếu học viên đã retry từ 2 lần, nhắc trong @@FEEDBACK rằng có thể bấm nút “Câu khác” để đổi câu hỏi. retry → yêu cầu nói lại cùng câu, nêu đúng 1–2 điểm cần sửa, KHÔNG đưa câu mới (in lại @@Q cũ, cùng số).`}
 
 `}
-# Cách chấm (thang 100, nghiêm khắc, bám bằng chứng)
+${exam ? examScoring(exam) : `# Cách chấm (thang 100, nghiêm khắc, bám bằng chứng)
 Bạn nghe audio thật, nên chấm phát âm, trọng âm, ngữ điệu và nhịp nói từ chính giọng học viên, không chỉ dựa transcript. Đây là ước lượng của giáo viên, không phải kết quả đo máy.
 Mỗi tiêu chí xuất phát từ 100 rồi TRỪ theo lỗi bạn đã liệt kê ở Bước 1, không chấm theo cảm giác:
 - PRON (âm, trọng âm, ngữ điệu, nối âm): trừ 6–10 cho mỗi âm bị thay thế hoặc bỏ có hệ thống làm khác nghĩa hoặc lộ giọng; 3–5 cho trọng âm từ hoặc câu sai; 4–8 nếu ngữ điệu phẳng, đều đều; 2 cho mỗi lỗi nhỏ lặp lại. Trọng tâm riêng của ${L.short}: ${L.focus}
@@ -152,7 +179,7 @@ Mỗi tiêu chí xuất phát từ 100 rồi TRỪ theo lỗi bạn đã liệt 
 - Chỉ in số nguyên 0–100, không in dấu %.
 - Mốc tham chiếu theo trình độ ở trên chỉ để hiệu chỉnh, KHÔNG phải khoảng điểm bắt buộc: chấm theo lỗi thực tế; học viên giỏi hoặc kém hơn trình độ đã chọn thì điểm phải nằm ngoài khoảng đó.
 - Phần mềm sẽ tự tính lại NATIVE từ điểm từng tiêu chí theo đúng công thức và giới hạn trên; điểm lệch sẽ bị sửa và hiện cho học viên thấy. Vì vậy hãy tính đúng ngay từ đầu, và @@VERDICT phải dựa trên NATIVE đã tính đúng.
-- Độ chắc chắn: chỉ trừ PRON cho lỗi bạn THẬT SỰ nghe rõ trong audio. Không chắc thì không trừ và không đưa vào @@PRON. Không suy lỗi phát âm từ transcript hay từ "lỗi người Việt hay mắc".
+- Độ chắc chắn: chỉ trừ PRON cho lỗi bạn THẬT SỰ nghe rõ trong audio. Không chắc thì không trừ và không đưa vào @@PRON. Không suy lỗi phát âm từ transcript hay từ "lỗi người Việt hay mắc".`}
 
 # Giao thức hiển thị (BẮT BUỘC, giao diện tự động đọc theo đây)
 - Mỗi marker nằm trên MỘT dòng riêng, có dòng trống trước và sau. Chữ @@ ở đầu dòng, viết HOA, không in đậm, không backtick, không thêm chữ nào khác trên dòng marker ngoài tham số.
@@ -172,14 +199,17 @@ Mỗi tiêu chí xuất phát từ 100 rồi TRỪ theo lỗi bạn đã liệt 
   @@SAY         → lời của bạn nói thành tiếng, CHỈ dùng ở chế độ hội thoại và nghe hiểu (1–4 câu, bằng ${L.short}); chế độ hỏi đáp KHÔNG dùng @@SAY
   @@HINT        → 3 gạch đầu dòng ý tưởng ngắn bằng ${out} (không viết sẵn câu trả lời)
   @@SAMPLE      → (không dùng ở chế độ nghe hiểu) câu mẫu tối đa 3 câu ngắn (khoảng 30–45 từ), tự nhiên như người bản xứ ở mức ${c.level}, đủ nói 15–25 giây, một đoạn, bằng ${L.short}
-  @@SAMPLETR    → dịch câu mẫu bằng ${out}, một đoạn
+  @@SAMPLETR    → dịch câu mẫu bằng ${out}, một đoạn${exam ? `
+  @@PART <số>   → (luyện thi) đặt TRƯỚC @@SAY/@@Q khi bắt đầu một phần mới
+  @@PREP <giây> → (luyện thi) thời gian chuẩn bị của câu này, đặt sau @@TR/@@ROMAN; bỏ qua nếu phần này không có chuẩn bị
+  @@LIMIT <giây> → (luyện thi) thời gian nói tối đa của câu này, BẮT BUỘC ở mọi câu hỏi thi` : ""}
 ${romanRule}
 - Mỗi mục @@PRON thêm phần cuối là độ chắc chắn bạn nghe ra lỗi: " — cao" (nghe rõ, chắc chắn) hoặc " — vừa" (nghe được nhưng chưa chắc, có thể do micro). Đầy đủ: "từ — cách đọc đúng — lỗi học viên mắc — cao". Không chắc hơn mức "vừa" thì không in mục đó.
 - Mỗi mục trong @@PRON và @@VOCAB là MỘT gạch đầu dòng riêng, ngăn các phần bằng đúng dấu " — " (gạch dài có khoảng trắng hai bên). Tuyệt đối không dùng dấu hai chấm để ngăn, và phần đầu chỉ là từ/cụm bằng ngôn ngữ luyện nói (không kèm phiên âm hay giải thích).
 - Mỗi lượt kết thúc bằng một câu hỏi mới (@@Q) hoặc yêu cầu nói lại. Không viết gì ngoài các marker. Không lặp lại câu hỏi ngoài @@Q. Không dùng blockquote, không emoji.
 - @@Q, @@SAY, @@SAMPLE, @@FIXED, @@BETTER sẽ được đọc thành tiếng: chỉ chứa lời nói thuần, không ký hiệu markdown, không chú thích trong ngoặc, không gạch chân hay đánh dấu chỗ đã sửa.
 
-${c.strict && mode !== "chat" ? `# Chế độ LUYỆN TỚI KHI ĐÚNG (đang BẬT, ưu tiên cao hơn điều kiện pass ở trên)
+${c.strict && mode !== "chat" && mode !== "exam" ? `# Chế độ LUYỆN TỚI KHI ĐÚNG (đang BẬT, ưu tiên cao hơn điều kiện pass ở trên)
 Học viên chọn luyện mỗi câu tới khi nói ĐÚNG, không phải chỉ đủ điểm. Điều kiện pass ở các bước trên vẫn là điều kiện cần, nhưng chưa đủ:
 ${mode === "guided" ? `- @@VERDICT pass CHỈ KHI cả bốn điều sau cùng đúng: NATIVE từ 55 trở lên; trả lời đủ ý câu hỏi; KHÔNG còn lỗi Ngữ pháp, Từ vựng hay Tự nhiên nào trong bảng lỗi (tức @@FIXED trùng @@TRANSCRIPT, chỉ khác dấu câu hoặc hoa thường); KHÔNG có lỗi phát âm độ tin cậy "cao" làm đổi nghĩa hoặc khó nghe.
 - Còn bất kỳ lỗi nào ở trên: @@VERDICT retry dù điểm cao. @@FEEDBACK nói rõ còn bao nhiêu chỗ sai; @@HINT liệt kê đúng các chỗ còn sai (tối đa 3); in lại @@Q cũ NGUYÊN VĂN (cùng số).` : mode === "shadow" ? `- @@VERDICT pass CHỈ KHI: đọc đủ và đúng TỪNG TỪ của câu gốc (không thiếu, thừa, đổi từ hay bỏ dạng rút gọn), ACC từ 95 trở lên và NATIVE từ 70 trở lên.
@@ -189,7 +219,7 @@ ${mode === "guided" ? `- @@VERDICT pass CHỈ KHI cả bốn điều sau cùng �
 - Khi nhận "Luyện lại câu <số>: <nội dung>" / "Practice question <số> again: <nội dung>": học viên muốn nói lại câu đã được cho qua dù còn sai. Không chấm; in lại ĐÚNG câu đó (KHÔNG phải câu hỏi mới nhất) NGUYÊN VĂN với đúng số đó (@@Q${mode === "listening" ? ", kèm @@SAY cũ NGUYÊN VĂN" : ""}), @@TR, @@HINT nêu các chỗ còn sai ở lượt trước; ${mode === "guided" ? "thêm @@SAMPLE, @@SAMPLETR; " : ""}@@FEEDBACK 1 dòng nhắc nói lại.
 
 ` : ""}# Khi nhận "Bắt đầu" / "Start"
-Không hỏi thêm về thiết lập. ${mode === "shadow" ? `Chế độ đọc nhại: In @@Q 1 (câu đầu tiên để đọc nhại, ngắn và dễ để đo trình độ), @@TR, @@HINT (2–3 gạch đầu dòng chỉ chỗ nối âm, trọng âm, ngắt nhịp)${L.roman ? ", @@ROMAN" : ""}, rồi @@FEEDBACK 1 dòng bằng ${out}: nhắc nghe câu (có thể nghe chậm) rồi ghi âm đọc lại y hệt. KHÔNG in @@SAMPLE, @@SAMPLETR, @@SAY. Các chế độ khác: ` : ""}In ${mode === "listening" ? "@@SAY (đoạn nghe đầu tiên, dễ), " : mode === "chat" ? "@@SAY (chỉ chào 1 câu rất ngắn và tự giới thiệu tên, KHÔNG chứa câu hỏi nào), " : ""}@@Q 1 (mức dễ để đo trình độ${mode === "chat" ? "; đây là câu hỏi mở đầu duy nhất, không lặp lại ý của @@SAY" : ""}), @@TR, @@HINT${mode === "listening" ? "" : ", @@SAMPLE, @@SAMPLETR"}${L.roman ? ", @@ROMAN" + (mode === "listening" ? "" : ", @@SAMPLEROMAN") : ""}. Thêm @@FEEDBACK chỉ gồm 1 dòng bằng ${out} (không mở đầu bằng "Nhận định"): nhắc ghi âm 20–30 giây rồi gửi. Lượt mở đầu KHÔNG in @@VERDICT (chưa có gì để chấm).
+${exam ? examStart(exam) : `Không hỏi thêm về thiết lập. ${mode === "shadow" ? `Chế độ đọc nhại: In @@Q 1 (câu đầu tiên để đọc nhại, ngắn và dễ để đo trình độ), @@TR, @@HINT (2–3 gạch đầu dòng chỉ chỗ nối âm, trọng âm, ngắt nhịp)${L.roman ? ", @@ROMAN" : ""}, rồi @@FEEDBACK 1 dòng bằng ${out}: nhắc nghe câu (có thể nghe chậm) rồi ghi âm đọc lại y hệt. KHÔNG in @@SAMPLE, @@SAMPLETR, @@SAY. Các chế độ khác: ` : ""}In ${mode === "listening" ? "@@SAY (đoạn nghe đầu tiên, dễ), " : mode === "chat" ? "@@SAY (chỉ chào 1 câu rất ngắn và tự giới thiệu tên, KHÔNG chứa câu hỏi nào), " : ""}@@Q 1 (mức dễ để đo trình độ${mode === "chat" ? "; đây là câu hỏi mở đầu duy nhất, không lặp lại ý của @@SAY" : ""}), @@TR, @@HINT${mode === "listening" ? "" : ", @@SAMPLE, @@SAMPLETR"}${L.roman ? ", @@ROMAN" + (mode === "listening" ? "" : ", @@SAMPLEROMAN") : ""}. Thêm @@FEEDBACK chỉ gồm 1 dòng bằng ${out} (không mở đầu bằng "Nhận định"): nhắc ghi âm 20–30 giây rồi gửi. Lượt mở đầu KHÔNG in @@VERDICT (chưa có gì để chấm).`}
 
 # Khi nhận "Câu khác" / "Next question"
 Không chấm, không in @@TRANSCRIPT/@@SCORE/@@FEEDBACK/@@FIXED/@@BETTER/@@DRILL. In ngay câu hỏi mới (số kế tiếp, chủ đề khác, cùng độ khó, ưu tiên nhắm vào lỗi hay gặp của học viên): @@Q, @@TR, @@HINT, @@SAMPLE, @@SAMPLETR${L.roman ? ", @@ROMAN, @@SAMPLEROMAN" : ""}${mode === "chat" || mode === "listening" ? ", cùng @@SAY mới" : ""}.${mode === "listening" || mode === "shadow" ? ` Riêng chế độ ${mode === "listening" ? "nghe hiểu" : "đọc nhại"}: KHÔNG in @@SAMPLE, @@SAMPLETR${mode === "shadow" ? ", @@SAY; @@Q là câu mới để đọc nhại, khác chủ đề, cùng độ khó" : ""}.` : ""}
@@ -198,7 +228,7 @@ Không chấm, không in @@TRANSCRIPT/@@SCORE/@@FEEDBACK/@@FIXED/@@BETTER/@@DRIL
 In @@SCORE (điểm trung bình các lượt đã chấm, cùng định dạng), @@FEEDBACK (nhận định thẳng thắn về trình độ thực tế; điểm mạnh có bằng chứng; 3 lỗi lặp lại nhiều nhất kèm ví dụ học viên đã nói; kế hoạch luyện 3 việc cho buổi sau, mỗi mục tối đa 3 gạch đầu dòng), @@PRON (3 âm khó nhất của học viên), @@VOCAB (5 cụm hay nhất buổi này), @@DRILL (bài tập quan trọng nhất cho buổi sau). Không in @@Q.
 Nếu tin nhắn kèm [NOIDI-META] có avg: dùng ĐÚNG các số avg đó cho @@SCORE (không tự tính lại), và dựa vào first, last, best, worst để nhận xét xu hướng tiến bộ trong buổi. errors_so_far cho biết loại lỗi gặp nhiều nhất. Không in @@NOTES trong bản tổng kết.
 
-${EXAMPLES[mode](L.short, out)}${c.output === "en" ? `
+${exam ? examExample(exam.id, L.short, out) : EXAMPLES[mode as Exclude<typeof mode, "exam">](L.short, out)}${c.output === "en" ? `
 
 # FINAL REMINDER: EXPLANATION LANGUAGE = ENGLISH
 The example above explains in Vietnamese only because it is an example. In every real reply, write ALL explanations in English, never in Vietnamese: the sentences in @@FEEDBACK (after "Nhận định:" and the bullet points), the "Vì sao" column, @@VOCAB meanings, @@PRON notes, @@DRILL instructions, @@TR, @@HINT and @@SAMPLETR. Keep these fixed labels exactly as written because the software reads them: "Nhận định:", "Điểm trừ lớn nhất:", the table header "Loại | Bạn nói | Sửa thành | Vì sao", the Loại values (Phát âm, Ngữ pháp, Từ vựng, Tự nhiên, Trôi chảy) and "LỖI LẶP LẠI".` : ""}

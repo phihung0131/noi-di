@@ -33,6 +33,8 @@ Nói Đi là tiện ích Chrome (Manifest V3) chạy trên [Google AI Studio](ht
 - **Sổ từ vựng:** lưu câu mẫu, cách nói hay và lỗi cần sửa, nghe lại, xuất CSV cho Anki. Xem được cả trong popup.
 - **Ôn tập theo lịch:** mục trong sổ đến hạn ôn theo hộp Leitner (1, 3, 7, 16, 35 ngày); thanh đầu hiện số mục đến hạn.
 - **Nghe so sánh A/B:** phát bản ghi của bạn rồi câu đúng, để tự nghe ra chỗ khác.
+- **Luyện thi:** IELTS Speaking (band 0–9 theo 4 tiêu chí, band tổng làm tròn đúng quy tắc IELTS), TOPIK 말하기 (6 dạng câu), HSKK 初级/中级/高级; đúng cấu trúc phần, thời gian chuẩn bị và thời gian nói, ghi âm tự dừng khi hết giờ. Điểm là ước lượng để luyện.
+- **Đối chiếu nhận dạng giọng nói (tuỳ chọn, mặc định tắt):** Chrome chép lời độc lập để phát hiện khi giám khảo chép sai hoặc sửa giùm lời bạn.
 - **Tiến bộ:** chuỗi ngày luyện, trung bình 7 ngày, biểu đồ điểm và tiêu chí yếu nhất qua các buổi.
 - **Tự dừng khi im lặng** (tuỳ chọn).
 

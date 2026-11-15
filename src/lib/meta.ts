@@ -1,5 +1,6 @@
 import { analyzePeaks, type Fluency } from "./fluency";
-import { scoreOf } from "./scoring";
+import { ieltsOverall } from "./exams";
+import { overallKey, scoreOf } from "./scoring";
 import type { ErrorRow, ModelTurn, Turn } from "./types";
 
 /**
@@ -38,8 +39,14 @@ export function prevScoreMeta(turns: Turn[]): string {
 }
 
 /** Toàn bộ dòng meta gửi kèm audio của một lượt. */
-export function turnMeta(turns: Turn[], peaks: number[], durMs: number): string {
-  const parts = [fluencyMeta(analyzePeaks(peaks, durMs)), prevScoreMeta(turns), errorMemory(turns)].filter(Boolean);
+/** Bản chép lời độc lập của Chrome, gói gọn trong ngoặc kép để giám khảo không nhầm với lời học viên. */
+export function asrMeta(asr?: string): string {
+  const t = (asr ?? "").replace(/["\n\r]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 500);
+  return t ? `asr_check: "${t}"` : "";
+}
+
+export function turnMeta(turns: Turn[], peaks: number[], durMs: number, asr?: string): string {
+  const parts = [fluencyMeta(analyzePeaks(peaks, durMs)), prevScoreMeta(turns), errorMemory(turns), asrMeta(asr)].filter(Boolean);
   return parts.length ? `${META_TAG} ${parts.join(" | ")}` : "";
 }
 
@@ -48,12 +55,19 @@ export function summaryMeta(turns: Turn[]): string {
   const list = scored(turns);
   if (!list.length) return "";
   const keys = [...new Set(list.flatMap((t) => t.score!.map((s) => s.key)))];
-  const avg = keys.map((k) => {
+  const mean = (k: string) => {
     const v = list.map((t) => scoreOf(t.score, k)).filter((x): x is number => x !== undefined);
-    return v.length ? `${k}=${Math.round(v.reduce((a, b) => a + b, 0) / v.length)}` : "";
-  }).filter(Boolean).join(" ");
-  const nat = list.map((t) => scoreOf(t.score, "NATIVE")).filter((x): x is number => x !== undefined);
+    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : undefined;
+  };
+  // Band IELTS (0–9) giữ 1 chữ số thập phân; thang 100 làm tròn số nguyên.
+  const ielts = ["FC", "LR", "GRA", "P"].every((k) => keys.includes(k));
+  const fmt = (k: string, v: number) => (ielts ? String(Math.round(v * 10) / 10) : String(Math.round(v)));
+  const avg = keys.map((k) => { const v = mean(k); return v === undefined ? "" : `${k}=${fmt(k, v)}`; }).filter(Boolean).join(" ");
+  // IELTS: band tổng từ trung bình từng tiêu chí (làm tròn về band nguyên), rồi làm tròn theo quy tắc IELTS.
+  const bandOverall = ielts ? ` band_overall=${ieltsOverall(["FC", "LR", "GRA", "P"].map((k) => Math.round(mean(k)!)))}` : "";
+  const ok = overallKey(keys) ?? "NATIVE";
+  const nat = list.map((t) => scoreOf(t.score, ok)).filter((x): x is number => x !== undefined);
   const trend = nat.length > 1 ? ` first=${nat[0]} last=${nat[nat.length - 1]} best=${Math.max(...nat)} worst=${Math.min(...nat)}` : "";
   const mem = errorMemory(turns, 5);
-  return `${META_TAG} scored_turns=${list.length} avg: ${avg}${trend}${mem ? " | " + mem : ""}`;
+  return `${META_TAG} scored_turns=${list.length} avg: ${avg}${bandOverall}${trend}${mem ? " | " + mem : ""}`;
 }
