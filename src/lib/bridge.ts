@@ -4,6 +4,7 @@ import { buildPrompt } from "./prompt";
 import type { SessionConfig, Turn } from "./types";
 import { byLabel, first, all, LABEL, SEL } from "./selectors";
 import { sleep, waitFor } from "./utils";
+import { isMeta } from "./meta";
 
 /* Mọi thứ chạm vào DOM của AI Studio nằm ở đây. */
 const CLICKABLE_ALL = "button, [role=button], [role=option], [role=menuitem]";
@@ -51,7 +52,7 @@ function parseTurn(el: Element, idx: number, userIdx: number): Turn {
   if (!isModelTurn(el)) {
     const text = (first(SEL.userText, el)?.textContent ?? "").replace(/\s+/g, " ").trim();
     const audio = !!first(SEL.audioMarker, el);
-    return { role: "user", key: "u" + idx, idx: userIdx, text, audio, hidden: userIdx === 0 && /^(bắt đầu|start)$/i.test(text), empty: !text && !audio };
+    return { role: "user", key: "u" + idx, idx: userIdx, text, audio, hidden: (userIdx === 0 && /^(bắt đầu|start)$/i.test(text)) || (!audio && isMeta(text)), empty: !text && !audio };
   }
   const error = findError(el);
   const parsed = parseModelElement(el);
@@ -103,7 +104,9 @@ export function snapshot(): Turn[] {
     const old = cache.get(i);
     if (gen && old) t = mergeStreaming(old, t);
     // turn lazy chưa render (rỗng) không được ghi đè bản đã có
-    if (t.empty && old && !old.empty) return;
+    // Nhớ chữ ký luôn: nếu không, mỗi tick lại coi là "DOM vừa đổi" và trang không bao giờ lắng
+    // (không tự đọc câu hỏi, không lưu lịch sử). Khi turn render lại, chữ ký đổi nên vẫn được parse lại.
+    if (t.empty && old && !old.empty) { sigs.set(i, sig); return; }
     sigs.set(i, sig);
     if (old && JSON.stringify(old) === JSON.stringify(t)) return;
     cache.set(i, t);

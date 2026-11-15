@@ -61,7 +61,8 @@ export function errorRows(sec: Section | undefined, blocks: Element[] | undefine
   const rows: string[][] = [];
   blocks?.filter((b) => b.tagName === "TABLE").forEach((t) => t.querySelectorAll("tr").forEach((tr) => {
     if (tr.querySelector("th")) return;
-    rows.push(Array.from(tr.children).map(cellText));
+    // AI Studio chèn <ms-cmark-node> bọc các ô bên trong <tr>: lấy ô theo td, không theo con trực tiếp.
+    rows.push(Array.from(tr.querySelectorAll("td")).map(cellText));
   }));
   // Bảng markdown chưa được render (AI Studio để nguyên dấu |).
   if (!rows.length) sec.paras.forEach((p) => {

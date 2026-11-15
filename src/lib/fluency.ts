@@ -14,6 +14,8 @@ export interface Fluency {
   longestPauseMs: number;
   /** tỉ lệ im lặng giữa chừng trên đoạn từ lúc bắt đầu tới lúc dứt lời (0..1) */
   silenceRatio: number;
+  /** từ lúc bắt đầu tới lúc dứt lời, trừ các lần ngừng dài hơn 2 giây (ms): dùng tính tốc độ nói */
+  activeMs: number;
 }
 
 const pct = (a: number[], p: number) => { const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(p * s.length))] ?? 0; };
@@ -35,14 +37,14 @@ export function analyzePeaks(peaks: number[], durMs?: number): Fluency | null {
   const voiced = peaks.map((p) => p >= thr);
   const firstV = voiced.indexOf(true), lastV = voiced.lastIndexOf(true);
   const total = durMs ?? peaks.length * PEAK_MS;
-  if (firstV < 0) return { durMs: total, speechMs: 0, longPauses: 0, longestPauseMs: 0, silenceRatio: 1 };
-  let run = 0, longPauses = 0, longest = 0, silent = 0;
+  if (firstV < 0) return { durMs: total, speechMs: 0, longPauses: 0, longestPauseMs: 0, silenceRatio: 1, activeMs: 0 };
+  let run = 0, longPauses = 0, longest = 0, silent = 0, longSilent = 0;
   const minRun = Math.ceil(2000 / PEAK_MS);
   // Bỏ khoảng lặng ngắn < 0,25s (giữa các âm tiết) khi tính im lặng.
   const shortRun = Math.ceil(250 / PEAK_MS);
   for (let i = firstV; i <= lastV + 1; i++) {
     if (i <= lastV && !voiced[i]) { run++; continue; }
-    if (run >= minRun) longPauses++;
+    if (run >= minRun) { longPauses++; longSilent += run; }
     if (run >= shortRun) silent += run;
     longest = Math.max(longest, run);
     run = 0;
@@ -54,14 +56,19 @@ export function analyzePeaks(peaks: number[], durMs?: number): Fluency | null {
     longPauses,
     longestPauseMs: Math.round(longest * PEAK_MS),
     silenceRatio: span ? silent / span : 1,
+    activeMs: Math.round((span - longSilent) * PEAK_MS),
   };
 }
 
-/** Tốc độ nói (từ/phút) tính trên thời gian có tiếng. */
+/**
+ * Tốc độ nói (từ/phút) theo cách đo thông dụng: tính cả các khoảng ngừng ngắn giữa từ và giữa câu,
+ * chỉ bỏ những lần ngừng dài hơn 2 giây. (Chia cho thời gian có tiếng thuần sẽ ra "tốc độ phát âm",
+ * cao hơn hẳn mốc 130–170 từ/phút thường dùng để so.)
+ */
 export function speechRate(transcript: string, f: Fluency | null): number | undefined {
-  if (!f || f.speechMs < 1500) return undefined;
+  if (!f || f.speechMs < 1500 || f.activeMs < 1500) return undefined;
   const w = wordCount(transcript);
-  return w ? Math.round(w / (f.speechMs / 60000)) : undefined;
+  return w ? Math.round(w / (f.activeMs / 60000)) : undefined;
 }
 
 /** Tự dừng ghi âm: đã nói ít nhất ~1,5s và đuôi bản ghi im lặng liên tục `silenceMs`. */

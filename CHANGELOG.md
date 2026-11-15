@@ -3,7 +3,7 @@
 ## 1.1.1
 
 **Chấm điểm chính xác hơn**
-- **Tự tính lại điểm tổng** từ điểm từng tiêu chí theo đúng công thức và các giới hạn bắt buộc (PRON dưới 50, câu quá ngắn). Điểm của giám khảo lệch thì được sửa và ghi chú rõ.
+- **Tự tính lại điểm tổng** từ điểm từng tiêu chí theo đúng công thức và các giới hạn bắt buộc (PRON dưới 50, câu quá ngắn). Chỉ kéo điểm xuống khi giám khảo cho cao hơn công thức, có ghi chú rõ; giám khảo cho thấp hơn thì giữ nguyên, vì họ có thể đã áp giới hạn phần mềm không biết.
 - **Số đo trôi chảy khách quan** từ sóng âm: thời lượng, thời gian có tiếng, số lần ngừng hơn 2 giây, tỉ lệ im lặng, tốc độ nói (từ/phút). Hiện dưới câu bạn nói và gửi kèm audio để giám khảo chấm trôi chảy theo số đo thật.
 - **Giám khảo nhớ lỗi qua các lượt:** mỗi lượt gửi kèm điểm lượt trước và các lỗi đã mắc, để chấm nhất quán và đánh dấu đúng lỗi lặp lại.
 - **Nháp chấm điểm ẩn (@@NOTES):** giám khảo phải liệt kê từng khoản trừ và phép tính trước khi in điểm, kể cả model không có chế độ suy nghĩ.
@@ -23,6 +23,14 @@
 - **Tự dừng khi im lặng** (bật trong Cài đặt).
 - **Xuất sổ từ vựng ra CSV** (Anki, Excel).
 - Gợi ý tình huống nhập vai khi tạo buổi mới.
+
+**Sửa lỗi (thử trên AI Studio thật)**
+- Trang không bao giờ "lắng" khi AI Studio rút nội dung lượt cũ ra khỏi DOM: không tự đọc câu hỏi mới, không đếm lượt, không lưu lịch sử. Đã sửa.
+- Bảng lỗi không tách được vì AI Studio bọc các ô bằng thẻ riêng trong mỗi hàng; nay nút lưu lỗi và trí nhớ lỗi hoạt động.
+- Dòng số đo gửi kèm audio không còn hiện thành tin nhắn riêng; số đo trôi chảy hiện đúng dưới câu bạn nói.
+- Tốc độ nói tính cả khoảng ngừng ngắn (chỉ bỏ ngừng trên 2 giây), khớp mốc 130–170 từ/phút.
+- Chọn giải thích bằng English thì nhận xét ra tiếng Anh; lượt mở đầu không còn nhãn "Nói lại câu này".
+- Hỏi đáp: không báo "đã đạt mốc qua câu" khi phần mềm không tự xét được câu trả lời có đủ ý hay không.
 
 ## 1.1.0
 

@@ -5,7 +5,8 @@ import type { Mode } from "./types";
  * Số liệu trong ví dụ phải tự khớp: NATIVE đúng công thức, NOTES khớp SCORE (test kiểm tra).
  */
 const wrap = (short: string, out: string, body: string) => `# Ví dụ MỘT lượt hoàn chỉnh (chỉ minh hoạ định dạng)
-Ví dụ dùng tiếng Anh và giải thích bằng tiếng Việt chỉ để minh hoạ cấu trúc, thứ tự marker, cách trừ điểm và cách tính. Khi làm thật: nội dung bằng ${short}, giải thích bằng ${out}, chủ đề và lỗi lấy từ chính audio của học viên. TUYỆT ĐỐI không chép câu, lỗi hay điểm số của ví dụ.
+Ví dụ dùng tiếng Anh và giải thích bằng tiếng Việt chỉ để minh hoạ cấu trúc, thứ tự marker, cách trừ điểm và cách tính. Khi làm thật: nội dung bằng ${short}, giải thích bằng ${out}, chủ đề và lỗi lấy từ chính audio của học viên. TUYỆT ĐỐI không chép câu, lỗi hay điểm số của ví dụ.${out === "tiếng Việt" ? "" : `
+NGÔN NGỮ GIẢI THÍCH: ví dụ viết phần giải thích bằng tiếng Việt chỉ vì là ví dụ. Khi làm thật, MỌI câu giải thích phải viết bằng ${out}, không được viết bằng tiếng Việt: nội dung nhận định và gạch đầu dòng trong @@FEEDBACK, cột "Vì sao", nghĩa trong @@VOCAB, ghi chú trong @@PRON, hướng dẫn trong @@DRILL, @@TR, @@HINT, @@SAMPLETR. Giữ NGUYÊN VĂN các nhãn cố định mà phần mềm đọc: "Nhận định:", "Điểm trừ lớn nhất:", tiêu đề 4 cột "Loại | Bạn nói | Sửa thành | Vì sao", giá trị cột Loại (Phát âm, Ngữ pháp, Từ vựng, Tự nhiên, Trôi chảy) và "LỖI LẶP LẠI". Các dòng @@NOTES nội bộ viết bằng ngôn ngữ nào cũng được.`}
 <<VÍ DỤ BẮT ĐẦU>>
 ${body.trim()}
 <<VÍ DỤ KẾT THÚC>>`;

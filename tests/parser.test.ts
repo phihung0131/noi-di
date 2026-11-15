@@ -104,6 +104,19 @@ describe("1.1.1: NOTES ẩn, bảng lỗi, điểm tính lại", () => {
       { type: "Phát âm", said: "wit", fix: "with", why: "LỖI LẶP LẠI" },
     ]);
   });
+  it("ô bảng bị AI Studio bọc trong <ms-cmark-node> bên trong <tr> vẫn tách được", () => {
+    const d = el(`<p>@@TRANSCRIPT</p><p>He go to school every day with his friends and teachers.</p><p>@@FEEDBACK</p><p>Nhận định: ổn.</p><div class="table-container"><table><tbody><tr id="h"></tr><tr id="r"></tr></tbody></table></div>`);
+    // HTML parser không cho phần tử lạ nằm trong <tr>, nên dựng bằng DOM như Angular làm.
+    const fill = (id: string, tag: string, cells: string[]) => {
+      const w = document.createElement("ms-cmark-node");
+      cells.forEach((c) => { const td = document.createElement(tag); td.textContent = c; w.appendChild(td); });
+      d.querySelector("#" + id)!.appendChild(w);
+    };
+    fill("h", "th", ["Loại", "Bạn nói", "Sửa thành", "Vì sao"]);
+    fill("r", "td", ["Ngữ pháp", "he go", "he goes", "ngôi ba số ít"]);
+    const t = parseModelElement(d);
+    expect(t.errors).toEqual([{ type: "Ngữ pháp", said: "he go", fix: "he goes", why: "ngôi ba số ít" }]);
+  });
   it("bảng markdown chưa render (dấu |) vẫn tách được", () => {
     const t = parseModelElement(el(`<p>@@FEEDBACK</p><p>Nhận định: ổn.</p><p>| Loại | Bạn nói | Sửa thành | Vì sao |</p><p>|---|---|---|---|</p><p>| Ngữ pháp | he go | he goes | ngôi ba số ít |</p>`));
     expect(t.errors).toEqual([{ type: "Ngữ pháp", said: "he go", fix: "he goes", why: "ngôi ba số ít" }]);
