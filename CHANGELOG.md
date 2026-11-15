@@ -23,6 +23,9 @@
 - **Tự dừng khi im lặng** (bật trong Cài đặt).
 - **Xuất sổ từ vựng ra CSV** (Anki, Excel).
 - Gợi ý tình huống nhập vai khi tạo buổi mới.
+- **Luyện tới khi đúng** (tuỳ chọn khi tạo buổi, trừ Hội thoại): chỉ sang câu mới khi nói đúng hết. Hỏi đáp: không còn lỗi ngữ pháp, từ vựng, tự nhiên hay phát âm rõ ràng. Đọc nhại: đủ từng từ, khớp câu gốc từ 95. Nghe hiểu: đúng mọi chi tiết. Giám khảo lỡ cho qua khi câu vẫn còn khác bản sửa thì hiện cảnh báo và nút "Luyện lại câu này".
+- **Ôn sổ theo lịch (SRS):** thẻ ôn nhìn câu đã nói sai hoặc nghĩa, tự nói to rồi mới hiện đáp án; nhớ thì giãn lịch 1, 3, 7, 16, 35 ngày, chưa nhớ thì ôn lại sau 10 phút. Thanh đầu hiện số mục đến hạn.
+- **Nghe so sánh A/B:** phát bản ghi của bạn rồi câu đúng ngay sau đó.
 
 **Sửa lỗi (thử trên AI Studio thật)**
 - Trang không bao giờ "lắng" khi AI Studio rút nội dung lượt cũ ra khỏi DOM: không tự đọc câu hỏi mới, không đếm lượt, không lưu lịch sử. Đã sửa.

@@ -179,7 +179,16 @@ ${romanRule}
 - Mỗi lượt kết thúc bằng một câu hỏi mới (@@Q) hoặc yêu cầu nói lại. Không viết gì ngoài các marker. Không lặp lại câu hỏi ngoài @@Q. Không dùng blockquote, không emoji.
 - @@Q, @@SAY, @@SAMPLE, @@FIXED, @@BETTER sẽ được đọc thành tiếng: chỉ chứa lời nói thuần, không ký hiệu markdown, không chú thích trong ngoặc, không gạch chân hay đánh dấu chỗ đã sửa.
 
-# Khi nhận "Bắt đầu" / "Start"
+${c.strict && mode !== "chat" ? `# Chế độ LUYỆN TỚI KHI ĐÚNG (đang BẬT, ưu tiên cao hơn điều kiện pass ở trên)
+Học viên chọn luyện mỗi câu tới khi nói ĐÚNG, không phải chỉ đủ điểm. Điều kiện pass ở các bước trên vẫn là điều kiện cần, nhưng chưa đủ:
+${mode === "guided" ? `- @@VERDICT pass CHỈ KHI cả bốn điều sau cùng đúng: NATIVE từ 55 trở lên; trả lời đủ ý câu hỏi; KHÔNG còn lỗi Ngữ pháp, Từ vựng hay Tự nhiên nào trong bảng lỗi (tức @@FIXED trùng @@TRANSCRIPT, chỉ khác dấu câu hoặc hoa thường); KHÔNG có lỗi phát âm độ tin cậy "cao" làm đổi nghĩa hoặc khó nghe.
+- Còn bất kỳ lỗi nào ở trên: @@VERDICT retry dù điểm cao. @@FEEDBACK nói rõ còn bao nhiêu chỗ sai; @@HINT liệt kê đúng các chỗ còn sai (tối đa 3); in lại @@Q cũ NGUYÊN VĂN (cùng số).` : mode === "shadow" ? `- @@VERDICT pass CHỈ KHI: đọc đủ và đúng TỪNG TỪ của câu gốc (không thiếu, thừa, đổi từ hay bỏ dạng rút gọn), ACC từ 95 trở lên và NATIVE từ 70 trở lên.
+- Thiếu hoặc sai dù chỉ một từ: @@VERDICT retry, ACC phải phản ánh đúng (mỗi từ thiếu/sai trừ ít nhất 8), @@HINT chỉ đúng từ bị thiếu/sai, in lại @@Q cũ NGUYÊN VĂN.` : `- @@VERDICT pass CHỈ KHI: mọi chi tiết học viên nói đều đúng với đoạn @@SAY (không sai, không bịa), không bỏ sót ý chính, HIEU từ 90 trở lên và TRALOI từ 80 trở lên.
+- Sai hoặc thiếu chi tiết nào: @@VERDICT retry, in lại @@SAY cũ NGUYÊN VĂN và @@Q cũ, @@HINT gợi ý nghe lại đúng chỗ bị sai.`}
+- Không giảm yêu cầu sau nhiều lần retry. Từ lần retry thứ 3 của cùng một câu, nhắc trong @@FEEDBACK rằng có thể bấm “Câu khác” nếu muốn bỏ qua.
+- Khi nhận "Luyện lại câu trước" / "Practice the previous one again": học viên muốn nói lại câu vừa được cho qua. Không chấm; in lại câu ngay trước đó NGUYÊN VĂN với cùng số (@@Q${mode === "listening" ? ", kèm @@SAY cũ NGUYÊN VĂN" : ""}), @@TR, @@HINT nêu các chỗ còn sai ở lượt trước; ${mode === "guided" ? "thêm @@SAMPLE, @@SAMPLETR; " : ""}@@FEEDBACK 1 dòng nhắc nói lại.
+
+` : ""}# Khi nhận "Bắt đầu" / "Start"
 Không hỏi thêm về thiết lập. ${mode === "shadow" ? `Chế độ đọc nhại: In @@Q 1 (câu đầu tiên để đọc nhại, ngắn và dễ để đo trình độ), @@TR, @@HINT (2–3 gạch đầu dòng chỉ chỗ nối âm, trọng âm, ngắt nhịp)${L.roman ? ", @@ROMAN" : ""}, rồi @@FEEDBACK 1 dòng bằng ${out}: nhắc nghe câu (có thể nghe chậm) rồi ghi âm đọc lại y hệt. KHÔNG in @@SAMPLE, @@SAMPLETR, @@SAY. Các chế độ khác: ` : ""}In ${mode === "listening" ? "@@SAY (đoạn nghe đầu tiên, dễ), " : mode === "chat" ? "@@SAY (chỉ chào 1 câu rất ngắn và tự giới thiệu tên, KHÔNG chứa câu hỏi nào), " : ""}@@Q 1 (mức dễ để đo trình độ${mode === "chat" ? "; đây là câu hỏi mở đầu duy nhất, không lặp lại ý của @@SAY" : ""}), @@TR, @@HINT${mode === "listening" ? "" : ", @@SAMPLE, @@SAMPLETR"}${L.roman ? ", @@ROMAN" + (mode === "listening" ? "" : ", @@SAMPLEROMAN") : ""}. Thêm @@FEEDBACK chỉ gồm 1 dòng bằng ${out} (không mở đầu bằng "Nhận định"): nhắc ghi âm 20–30 giây rồi gửi. Lượt mở đầu KHÔNG in @@VERDICT (chưa có gì để chấm).
 
 # Khi nhận "Câu khác" / "Next question"

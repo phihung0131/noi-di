@@ -62,3 +62,18 @@ describe("ví dụ trong prompt tự nhất quán", () => {
     });
   }
 });
+
+describe("strictIssues", () => {
+  const S2 = (o: Record<string, number>) => Object.entries(o).map(([key, v]) => ({ key, value: String(v) }));
+  it("hỏi đáp: đếm số chỗ còn khác bản sửa, gộp cặp xoá + thêm", async () => {
+    const { strictIssues } = await import("@/lib/scoring");
+    expect(strictIssues("guided", { transcript: "I go to the beach and we eat fish", fixed: "I went to the beach and we ate fish", score: S2({ NATIVE: 80 }) })).toEqual(["2 chỗ còn khác bản sửa"]);
+    expect(strictIssues("guided", { transcript: "I went home.", fixed: "I went home", score: S2({ NATIVE: 80 }) })).toEqual([]);
+  });
+  it("đọc nhại cần đủ từ và ACC từ 95; nghe hiểu cần HIEU 90, TRALOI 80", async () => {
+    const { strictIssues } = await import("@/lib/scoring");
+    expect(strictIssues("shadow", { transcript: "I spent my weekend cleaning", fixed: "I spent my entire weekend cleaning", score: S2({ NATIVE: 92, ACC: 92 }) })).toEqual(["1 chỗ khác câu gốc", "khớp câu gốc 92 (cần 95)"]);
+    expect(strictIssues("listening", { transcript: "x", score: S2({ HIEU: 85, TRALOI: 90 }) })).toEqual(["mức hiểu 85 (cần 90)"]);
+    expect(strictIssues("guided", { transcript: "x", score: undefined })).toEqual([]);
+  });
+});

@@ -94,8 +94,10 @@ export function playLatest(auto = false) {
 
 /* ---------- nghe lại bản ghi ---------- */
 const player = new Audio();
-player.addEventListener("ended", () => stopPlayback());
-export function stopPlayback() { player.pause(); if (get().playingRec) set({ playingRec: null }); }
+/** Việc chạy tiếp khi bản ghi phát hết (nghe so sánh A/B: đọc câu đúng sau bản ghi). */
+let afterRec: (() => void) | null = null;
+player.addEventListener("ended", () => { const next = afterRec; afterRec = null; stopPlayback(); next?.(); });
+export function stopPlayback() { afterRec = null; player.pause(); if (get().playingRec) set({ playingRec: null }); }
 export function playRec(id: string, url: string | null | undefined) {
   if (!url) return;
   const same = get().playingRec === id && !player.paused;
@@ -105,6 +107,16 @@ export function playRec(id: string, url: string | null | undefined) {
   player.play().then(() => set({ playingRec: id })).catch(() => toast("Không phát được bản ghi."));
 }
 export const playerEl = player;
+
+/** Nghe so sánh A/B: bản ghi của bạn (A) rồi câu đúng do giọng máy đọc (B). Bấm lần nữa để dừng. */
+export function playAB(id: string, url: string | null | undefined, text: string) {
+  if (!url || !text) return;
+  const same = get().playingRec === id;
+  stopSpeaking(); stopPlayback();
+  if (same) return;
+  player.src = url;
+  player.play().then(() => { set({ playingRec: id }); afterRec = () => say(`${id}:b`, text, false); }).catch(() => toast("Không phát được bản ghi."));
+}
 
 /* ---------- ghi âm ---------- */
 let busy = false;
@@ -198,13 +210,16 @@ const sendQuick = async (vi: string, en: string) => {
   try { await sendText(get().session.output === "en" ? en : vi); } catch (e) { toast((e as Error).message); }
 };
 /** Nhận ra tin nhắn do extension tự gửi để hiện gọn thay vì lộ nội dung kỹ thuật. */
-export function quickLabel(text: string): { kind: "retry" | "skip" | "summary"; label: string } | null {
+export function quickLabel(text: string): { kind: "retry" | "skip" | "summary" | "again"; label: string } | null {
   if (/^(Phản hồi trước bị thiếu|Your previous reply was missing)/i.test(text)) return { kind: "retry", label: "Đã nhờ giám khảo trả lời lại" };
   if (/^(Câu khác|Next question)$/i.test(text)) return { kind: "skip", label: "Đã đổi sang câu hỏi khác" };
+  if (/^(Luyện lại câu trước|Practice the previous one again)$/i.test(text)) return { kind: "again", label: "Luyện lại câu trước cho tới khi đúng" };
   if (/^(Tổng kết buổi|Summarize session)(\s*\[NOIDI-META\].*)?$/is.test(text.trim())) return { kind: "summary", label: "Đã yêu cầu tổng kết buổi" };
   return null;
 }
 
+/** Luyện tới khi đúng: giám khảo lỡ cho qua khi câu vẫn còn sai, xin nói lại câu đó. */
+export const practiceAgain = () => sendQuick("Luyện lại câu trước", "Practice the previous one again");
 /** Đổi sang câu hỏi khác mà không chấm. */
 export const skipQuestion = () => sendQuick("Câu khác", "Next question");
 /** Yêu cầu giám khảo trả lời lại khi lượt trước bị rỗng/lỗi. */

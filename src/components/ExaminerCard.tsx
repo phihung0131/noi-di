@@ -1,11 +1,12 @@
 import { useStore } from "@tanstack/react-store";
-import { Activity, AlertTriangle, BookmarkPlus, ChevronDown, Dumbbell, EyeOff, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
+import { Activity, AlertTriangle, BookmarkPlus, ChevronDown, Dumbbell, EyeOff, Eye, Languages, Headphones, Lightbulb, MessageSquareQuote, RefreshCw, RotateCcw, Timer } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
-import { appStore, openReport, retryReply, setDialog, skipQuestion, switchModelAndRetry, toast, type SentRec } from "@/lib/controller";
+import { appStore, openReport, playAB, practiceAgain, retryReply, setDialog, skipQuestion, switchModelAndRetry, toast, type SentRec } from "@/lib/controller";
 import { diffWords } from "@/lib/diff";
 import { analyzePeaks, speechRate } from "@/lib/fluency";
+import { speechStore, stopSpeaking } from "@/lib/speech";
 import { useNoteActions } from "@/lib/notes";
-import { expectedVerdict } from "@/lib/scoring";
+import { expectedVerdict, strictIssues } from "@/lib/scoring";
 import { classifyError } from "@/lib/errors";
 import { parsePron, speakable, splitPhrase } from "@/lib/langs";
 import type { ErrorRow, ModelTurn } from "@/lib/types";
@@ -77,6 +78,21 @@ function PronList({ items, idp, lang }: { items: string[]; idp: string; lang: st
 }
 
 /** So từng từ: chữ gạch là phần bạn nói bị bỏ/đổi, chữ tô xanh là phần cần nói. */
+/** Nghe so sánh: bản ghi của bạn (A) rồi câu đúng (B), để tự nghe ra chỗ khác. */
+function ABButton({ id, url, text }: { id: string; url: string; text: string }) {
+  const playing = useStore(appStore, (s) => s.playingRec === id);
+  const speaking = useStore(speechStore, (s) => s.key === `${id}:b`);
+  const active = playing || speaking;
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <Button size="sm" variant={active ? "default" : "secondary"} onClick={() => { if (speaking) stopSpeaking(); else playAB(id, url, text); }}>
+        <Headphones size={15} />{active ? "Dừng" : "Nghe so sánh A/B"}
+      </Button>
+      <span className="text-xs text-muted-foreground">{playing ? "A: bản ghi của bạn…" : speaking ? "B: câu đúng…" : "A: bạn nói, rồi B: câu đúng"}</span>
+    </div>
+  );
+}
+
 function DiffLine({ from, to, label }: { from: string; to: string; label: string }) {
   const ops = diffWords(from, to);
   if (!ops.some((o) => o.op !== "same")) return <p className="mt-2 text-xs text-success">{label}: khớp hoàn toàn.</p>;
@@ -200,6 +216,8 @@ const Skeleton = ({ label }: { label?: string }) => (
 
 export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming, answered, rec }: { turn: ModelTurn; latest: boolean; streaming: boolean; answered: boolean; rec?: SentRec }) {
   const mode = useStore(appStore, (s) => s.session.mode);
+  const strict = useStore(appStore, (s) => !!s.session.strict && s.session.mode !== "chat");
+  const strictLeft = strict ? strictIssues(mode, turn) : [];
   const listenOnly = useStore(appStore, (s) => s.prefs.listenOnly);
   const showTrans = useStore(appStore, (s) => s.prefs.showTrans);
   const lang = useLang();
@@ -237,7 +255,13 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
                 {t.verdict === "pass" ? "Qua câu" : "Nói lại câu này"}
               </span>
             )}
-            {t.verdict && expectedVerdict(mode, t.score) && expectedVerdict(mode, t.score) !== t.verdict && (
+            {strictLeft.length > 0 && t.verdict === "pass" && (
+              <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                Luyện tới khi đúng: vẫn còn {strictLeft.join(", ")}.
+                {latest && <Button size="sm" variant="secondary" onClick={() => void practiceAgain()}><RotateCcw size={14} />Luyện lại câu này</Button>}
+              </span>
+            )}
+            {!strictLeft.length && t.verdict && expectedVerdict(mode, t.score) && expectedVerdict(mode, t.score) !== t.verdict && (
               <span className="text-xs text-muted-foreground">{t.verdict === "pass" ? "Theo điểm tính lại, câu này chưa đạt mốc qua câu. Nên nói lại cho chắc." : "Theo điểm tính lại, câu này đã đạt mốc qua câu."}</span>
             )}
           </div>
@@ -254,6 +278,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             <div>
               <Rewrite title={mode === "shadow" ? "Câu gốc" : "Câu của bạn, đã sửa"} text={t.fixed} id={audioId("fixed")} lang={lang} tone="fix" />
               {t.transcript && <DiffLine from={t.transcript} to={t.fixed} label={mode === "shadow" ? "So với câu gốc" : "Chỗ đã sửa"} />}
+              {rec?.url && <ABButton id={`ab:${t.key}`} url={rec.url} text={t.fixed} />}
             </div>
           )}
           {t.better && !recording && !pending("BETTER") && <Rewrite title="Người bản xứ sẽ nói" text={t.better} id={audioId("better")} lang={lang} tone="native" />}

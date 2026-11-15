@@ -21,7 +21,7 @@ Nói Đi là tiện ích Chrome (Manifest V3) chạy trên [Google AI Studio](ht
 
 **Luyện nói thật sự**
 - **8 ngôn ngữ:** English (Mỹ, Anh), 日本語, 한국어, 中文, Deutsch, Français, Español, Português (Brasil). Có phiên âm (romaji, romanization, pinyin) cho ngôn ngữ không dùng chữ Latin.
-- **4 chế độ:** *Hỏi đáp có chấm*, *Hội thoại* tự nhiên, *Nghe hiểu* (nghe đoạn ngắn rồi trả lời bằng lời), *Đọc nhại* (nghe câu người bản xứ rồi đọc lại y hệt). Trình độ A2 đến C1. Có gợi ý tình huống nhập vai.
+- **4 chế độ:** *Hỏi đáp có chấm*, *Hội thoại* tự nhiên, *Nghe hiểu* (nghe đoạn ngắn rồi trả lời bằng lời), *Đọc nhại* (nghe câu người bản xứ rồi đọc lại y hệt). Trình độ A2 đến C1. Có gợi ý tình huống nhập vai. Tuỳ chọn **Luyện tới khi đúng**: chỉ sang câu mới khi nói đúng hết, không chỉ đủ điểm.
 - **Điểm trên 100, "giống người bản xứ":** gồm phát âm và ngữ điệu, trôi chảy, tự nhiên, ngữ pháp, từ vựng. Model nghe trực tiếp audio của bạn, không chỉ đọc transcript.
 - **Điểm đáng tin hơn:** tiện ích tự tính lại điểm tổng theo công thức, đo trôi chảy từ sóng âm (số lần ngừng, tốc độ nói) và gửi kèm cho giám khảo cùng điểm lượt trước và các lỗi đã mắc. Lỗi phát âm giám khảo chưa chắc được tách riêng.
 - **Nhận xét cụ thể:** transcript, **bản sửa đầy đủ** câu trả lời của bạn, **bản người bản xứ sẽ nói**, bảng lỗi (loại, bạn nói, sửa thành, vì sao), từ phát âm sai kèm cách đọc và một bài tập sửa lỗi.
@@ -31,6 +31,8 @@ Nói Đi là tiện ích Chrome (Manifest V3) chạy trên [Google AI Studio](ht
 - Nghe câu hỏi, câu mẫu (cả bản chậm) bằng giọng của Chrome, tự đọc câu hỏi mới.
 - Ghi âm có sóng âm trực tiếp, **nghe lại trước khi gửi** và nghe lại từng câu đã gửi. Phím tắt: `Alt+R` ghi/dừng, `Alt+P` nghe lại, `Alt+Enter` gửi, `Alt+L` nghe lại câu hỏi.
 - **Sổ từ vựng:** lưu câu mẫu, cách nói hay và lỗi cần sửa, nghe lại, xuất CSV cho Anki. Xem được cả trong popup.
+- **Ôn tập theo lịch:** mục trong sổ đến hạn ôn theo hộp Leitner (1, 3, 7, 16, 35 ngày); thanh đầu hiện số mục đến hạn.
+- **Nghe so sánh A/B:** phát bản ghi của bạn rồi câu đúng, để tự nghe ra chỗ khác.
 - **Tiến bộ:** chuỗi ngày luyện, trung bình 7 ngày, biểu đồ điểm và tiêu chí yếu nhất qua các buổi.
 - **Tự dừng khi im lặng** (tuỳ chọn).
 

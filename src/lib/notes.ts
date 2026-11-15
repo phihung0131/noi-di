@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { storage } from "./storage";
+import { grade } from "./srs";
 import type { NoteItem } from "./types";
 
 const KEY = ["notes"];
@@ -30,6 +31,12 @@ export const removeNote = (id: string) => serial(async () => {
   return next;
 });
 
+export const gradeNote = (id: string, remembered: boolean) => serial(async () => {
+  const next = (await storage.notes()).map((x) => (x.id === id ? grade(x, remembered) : x));
+  await storage.setNotes(next);
+  return next;
+});
+
 export function useNoteActions() {
   const qc = useQueryClient();
   const add = useMutation({
@@ -40,7 +47,11 @@ export function useNoteActions() {
     mutationFn: removeNote,
     onSuccess: (next) => qc.setQueryData(KEY, next),
   });
-  return { add, remove };
+  const review = useMutation({
+    mutationFn: ({ id, remembered }: { id: string; remembered: boolean }) => gradeNote(id, remembered),
+    onSuccess: (next) => qc.setQueryData(KEY, next),
+  });
+  return { add, remove, review };
 }
 
 const csvCell = (v: string) => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
