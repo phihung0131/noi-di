@@ -30,6 +30,7 @@
 - Dòng số đo gửi kèm audio không còn hiện thành tin nhắn riêng; số đo trôi chảy hiện đúng dưới câu bạn nói.
 - Tốc độ nói tính cả khoảng ngừng ngắn (chỉ bỏ ngừng trên 2 giây), khớp mốc 130–170 từ/phút.
 - Chọn giải thích bằng English thì nhận xét ra tiếng Anh; lượt mở đầu không còn nhãn "Nói lại câu này".
+- "Lưu N lỗi vào sổ" chỉ lưu được 1 mục do các lần ghi chạy song song đè nhau; nay ghi lần lượt.
 - Hỏi đáp: không báo "đã đạt mốc qua câu" khi phần mềm không tự xét được câu trả lời có đủ ý hay không.
 
 ## 1.1.0
