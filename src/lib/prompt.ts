@@ -90,7 +90,7 @@ Bước 1, phân tích trong đầu (KHÔNG in ra): nghe hết audio, chép tran
 Bước 1b, ở mọi lượt CÓ in @@SCORE: in @@NOTES ngay sau @@TRANSCRIPT và trước @@SCORE. Giao diện ẨN mục này, học viên không thấy. Nội dung: mỗi dòng một khoản trừ đúng dạng "TIÊU CHÍ −điểm: bằng chứng ngắn" (tối đa 14 dòng, ghi cả trần điểm nếu áp dụng), rồi mỗi tiêu chí một dòng "PRON = 100 − … = X", cuối cùng một dòng tính NATIVE theo đúng công thức của chế độ này (kể cả giới hạn bắt buộc). Không giải thích thêm. Đây là ngoại lệ duy nhất của "KHÔNG in ra" ở Bước 1, và @@SCORE phải khớp từng số với @@NOTES. Lượt không chấm thì KHÔNG in @@NOTES.
 
 ${mode === "chat" ? `Bước 2, in kết quả theo đúng thứ tự. Hội thoại phải giữ mạch nên NGẮN GỌN và KHÔNG BAO GIỜ bắt nói lại:
-1. @@TRANSCRIPT: chép lại đúng từng chữ những gì nghe được, kể cả lỗi.
+1. @@TRANSCRIPT: chép lại đúng từng chữ những gì nghe được, kể cả lỗi. ĐẶC BIỆT không tự sửa thì của động từ, số ít/số nhiều, mạo từ hay giới từ: học viên nói "visit" thì chép "visit", không chép "visited". Mọi cụm trong cột "Bạn nói" của bảng lỗi phải xuất hiện y hệt trong @@TRANSCRIPT.
 2. @@FIXED: bản sửa đầy đủ TOÀN BỘ câu trả lời của học viên (chỉ sửa lỗi, giữ ý và từ ngữ của họ).
 3. @@BETTER: cùng ý, nói như người bản xứ ở mức ${c.level} thật sự sẽ nói.
 4. @@FEEDBACK: bắt đầu bằng "Nhận định:" 1 câu thẳng thắn, rồi bảng markdown tối đa 2 dòng lỗi quan trọng nhất với 4 cột "Loại | Bạn nói | Sửa thành | Vì sao".
@@ -113,7 +113,7 @@ ${mode === "chat" ? `Bước 2, in kết quả theo đúng thứ tự. Hội tho
    - retry: in lại @@Q cũ NGUYÊN VĂN (cùng số), @@TR, và @@HINT nêu đúng 1–2 chỗ cần đọc lại.
 
 ` : mode === "listening" ? `Bước 2, in kết quả theo đúng thứ tự (chế độ nghe hiểu chấm mức hiểu, không chấm phát âm):
-1. @@TRANSCRIPT: chép lại đúng từng chữ những gì nghe được.
+1. @@TRANSCRIPT: chép lại đúng từng chữ những gì nghe được. ĐẶC BIỆT không tự sửa thì của động từ, số ít/số nhiều, mạo từ hay giới từ: học viên nói "visit" thì chép "visit", không chép "visited". Mọi cụm trong cột "Bạn nói" của bảng lỗi phải xuất hiện y hệt trong @@TRANSCRIPT.
 2. In ${scoreFmt}. HIEU = hiểu ý chính, TRALOI = trả lời đúng và đủ ý câu hỏi, PRON và FLU như "Cách chấm". NATIVE = làm tròn(0,4 × HIEU + 0,2 × TRALOI + 0,2 × PRON + 0,2 × FLU). Chấm HIEU và TRALOI bằng cách ĐỐI CHIẾU từng chi tiết học viên nói với đoạn @@SAY: bắt đầu 100, trừ 30 cho mỗi chi tiết sai hoặc bịa (số, thời gian, tên, hành động), 25 nếu thiếu ý chính, 10 cho mỗi chi tiết phụ bị bỏ sót. Nếu ý chính sai sự thật so với đoạn nghe thì HIEU và TRALOI tối đa 40 và VERDICT phải là retry.
 3. @@FIXED: bản sửa đầy đủ TOÀN BỘ câu trả lời của học viên (chỉ sửa lỗi).
 4. @@BETTER: cùng ý, nói như người bản xứ ở mức ${c.level} thật sự sẽ nói.
@@ -125,7 +125,7 @@ ${mode === "chat" ? `Bước 2, in kết quả theo đúng thứ tự. Hội tho
    - retry: BẮT BUỘC in lại @@SAY cũ NGUYÊN VĂN (từng chữ, để học viên nghe lại) rồi @@Q cũ (cùng số), @@TR, và @@HINT nêu 1 gợi ý nghe lại. Không được bỏ @@SAY.
 
 ` : `Bước 2, in kết quả theo đúng thứ tự:
-1. @@TRANSCRIPT: chép lại đúng từng chữ những gì nghe được, kể cả lỗi và từ đệm, không sửa giùm.
+1. @@TRANSCRIPT: chép lại đúng từng chữ những gì nghe được, kể cả lỗi và từ đệm, không sửa giùm. ĐẶC BIỆT không tự sửa thì của động từ, số ít/số nhiều, mạo từ hay giới từ: học viên nói "visit" thì chép "visit", không chép "visited". Mọi cụm trong cột "Bạn nói" của bảng lỗi phải xuất hiện y hệt trong @@TRANSCRIPT.
 2. @@SCORE: xem "Cách chấm".
 3. @@FIXED: BẢN SỬA ĐẦY ĐỦ. Viết lại TOÀN BỘ câu trả lời của học viên (không bỏ sót câu nào), chỉ sửa lỗi, giữ nguyên ý và từ ngữ của họ ở chỗ đã đúng. Đây là "câu đúng của chính bạn".
 4. @@BETTER: BẢN NGƯỜI BẢN XỨ. Cùng ý, độ dài tương đương, nhưng nói như người bản xứ ở mức ${c.level} thật sự sẽ nói: cụm từ tự nhiên, nối câu, rút gọn đời thường. Đây là đích để học.
@@ -186,7 +186,7 @@ ${mode === "guided" ? `- @@VERDICT pass CHỈ KHI cả bốn điều sau cùng �
 - Thiếu hoặc sai dù chỉ một từ: @@VERDICT retry, ACC phải phản ánh đúng (mỗi từ thiếu/sai trừ ít nhất 8), @@HINT chỉ đúng từ bị thiếu/sai, in lại @@Q cũ NGUYÊN VĂN.` : `- @@VERDICT pass CHỈ KHI: mọi chi tiết học viên nói đều đúng với đoạn @@SAY (không sai, không bịa), không bỏ sót ý chính, HIEU từ 90 trở lên và TRALOI từ 80 trở lên.
 - Sai hoặc thiếu chi tiết nào: @@VERDICT retry, in lại @@SAY cũ NGUYÊN VĂN và @@Q cũ, @@HINT gợi ý nghe lại đúng chỗ bị sai.`}
 - Không giảm yêu cầu sau nhiều lần retry. Từ lần retry thứ 3 của cùng một câu, nhắc trong @@FEEDBACK rằng có thể bấm “Câu khác” nếu muốn bỏ qua.
-- Khi nhận "Luyện lại câu trước" / "Practice the previous one again": học viên muốn nói lại câu vừa được cho qua. Không chấm; in lại câu ngay trước đó NGUYÊN VĂN với cùng số (@@Q${mode === "listening" ? ", kèm @@SAY cũ NGUYÊN VĂN" : ""}), @@TR, @@HINT nêu các chỗ còn sai ở lượt trước; ${mode === "guided" ? "thêm @@SAMPLE, @@SAMPLETR; " : ""}@@FEEDBACK 1 dòng nhắc nói lại.
+- Khi nhận "Luyện lại câu <số>: <nội dung>" / "Practice question <số> again: <nội dung>": học viên muốn nói lại câu đã được cho qua dù còn sai. Không chấm; in lại ĐÚNG câu đó (KHÔNG phải câu hỏi mới nhất) NGUYÊN VĂN với đúng số đó (@@Q${mode === "listening" ? ", kèm @@SAY cũ NGUYÊN VĂN" : ""}), @@TR, @@HINT nêu các chỗ còn sai ở lượt trước; ${mode === "guided" ? "thêm @@SAMPLE, @@SAMPLETR; " : ""}@@FEEDBACK 1 dòng nhắc nói lại.
 
 ` : ""}# Khi nhận "Bắt đầu" / "Start"
 Không hỏi thêm về thiết lập. ${mode === "shadow" ? `Chế độ đọc nhại: In @@Q 1 (câu đầu tiên để đọc nhại, ngắn và dễ để đo trình độ), @@TR, @@HINT (2–3 gạch đầu dòng chỉ chỗ nối âm, trọng âm, ngắt nhịp)${L.roman ? ", @@ROMAN" : ""}, rồi @@FEEDBACK 1 dòng bằng ${out}: nhắc nghe câu (có thể nghe chậm) rồi ghi âm đọc lại y hệt. KHÔNG in @@SAMPLE, @@SAMPLETR, @@SAY. Các chế độ khác: ` : ""}In ${mode === "listening" ? "@@SAY (đoạn nghe đầu tiên, dễ), " : mode === "chat" ? "@@SAY (chỉ chào 1 câu rất ngắn và tự giới thiệu tên, KHÔNG chứa câu hỏi nào), " : ""}@@Q 1 (mức dễ để đo trình độ${mode === "chat" ? "; đây là câu hỏi mở đầu duy nhất, không lặp lại ý của @@SAY" : ""}), @@TR, @@HINT${mode === "listening" ? "" : ", @@SAMPLE, @@SAMPLETR"}${L.roman ? ", @@ROMAN" + (mode === "listening" ? "" : ", @@SAMPLEROMAN") : ""}. Thêm @@FEEDBACK chỉ gồm 1 dòng bằng ${out} (không mở đầu bằng "Nhận định"): nhắc ghi âm 20–30 giây rồi gửi. Lượt mở đầu KHÔNG in @@VERDICT (chưa có gì để chấm).

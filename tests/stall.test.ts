@@ -31,5 +31,8 @@ describe("quickLabel", () => {
     expect(quickLabel("Phản hồi trước bị thiếu hoặc bị cắt. Hãy …")?.kind).toBe("retry");
     expect(quickLabel("Tôi thích bóng đá")).toBeNull();
     expect(quickLabel("Tổng kết buổi\n[NOIDI-META] scored_turns=3 avg: NATIVE=60")?.kind).toBe("summary");
+    expect(quickLabel("Luyện lại câu 1: What did you do last weekend?")).toEqual({ kind: "again", label: "Luyện lại câu 1 cho tới khi đúng" });
+    expect(quickLabel("Practice question 3 again: Why?")?.kind).toBe("again");
+    expect(quickLabel("Luyện lại câu này đi")).toBeNull();
   });
 });

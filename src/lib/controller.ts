@@ -213,13 +213,21 @@ const sendQuick = async (vi: string, en: string) => {
 export function quickLabel(text: string): { kind: "retry" | "skip" | "summary" | "again"; label: string } | null {
   if (/^(Phản hồi trước bị thiếu|Your previous reply was missing)/i.test(text)) return { kind: "retry", label: "Đã nhờ giám khảo trả lời lại" };
   if (/^(Câu khác|Next question)$/i.test(text)) return { kind: "skip", label: "Đã đổi sang câu hỏi khác" };
-  if (/^(Luyện lại câu trước|Practice the previous one again)$/i.test(text)) return { kind: "again", label: "Luyện lại câu trước cho tới khi đúng" };
+  const again = /^(?:Luyện lại câu|Practice question)\s*(\d+)/i.exec(text);
+  if (again && /^(Luyện lại câu \d+:|Practice question \d+ again:)/i.test(text)) return { kind: "again", label: `Luyện lại câu ${again[1]} cho tới khi đúng` };
   if (/^(Tổng kết buổi|Summarize session)(\s*\[NOIDI-META\].*)?$/is.test(text.trim())) return { kind: "summary", label: "Đã yêu cầu tổng kết buổi" };
   return null;
 }
 
 /** Luyện tới khi đúng: giám khảo lỡ cho qua khi câu vẫn còn sai, xin nói lại câu đó. */
-export const practiceAgain = () => sendQuick("Luyện lại câu trước", "Practice the previous one again");
+export function practiceAgain(turnKey: string) {
+  const turns = get().turns;
+  const i = turns.findIndex((t) => t.key === turnKey);
+  // Câu học viên vừa trả lời là câu hỏi gần nhất trước lượt chấm này.
+  const q = turns.slice(0, Math.max(0, i)).reverse().find((t): t is ModelTurn => t.role === "model" && !!t.q)?.q;
+  if (!q) { toast("Không tìm thấy câu hỏi để luyện lại."); return; }
+  void sendQuick(`Luyện lại câu ${q.n}: ${q.text}`, `Practice question ${q.n} again: ${q.text}`);
+}
 /** Đổi sang câu hỏi khác mà không chấm. */
 export const skipQuestion = () => sendQuick("Câu khác", "Next question");
 /** Yêu cầu giám khảo trả lời lại khi lượt trước bị rỗng/lỗi. */

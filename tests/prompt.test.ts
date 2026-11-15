@@ -67,7 +67,7 @@ describe("Luyện tới khi đúng", () => {
       expect(off).not.toContain("LUYỆN TỚI KHI ĐÚNG");
       if (m === "chat") { expect(on).toBe(off); continue; }
       expect(on).toContain("LUYỆN TỚI KHI ĐÚNG");
-      expect(on).toContain("Luyện lại câu trước");
+      expect(on).toContain("Luyện lại câu <số>");
       // mọi dòng của prompt thường vẫn còn nguyên trong prompt chặt
       for (const line of off.split("\n")) expect(on).toContain(line);
     }
