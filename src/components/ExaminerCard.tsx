@@ -258,7 +258,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
             {strictLeft.length > 0 && t.verdict === "pass" && (
               <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 Luyện tới khi đúng: vẫn còn {strictLeft.join(", ")}.
-                {latest && <Button size="sm" variant="secondary" onClick={() => void practiceAgain()}><RotateCcw size={14} />Luyện lại câu này</Button>}
+                {latest && <Button size="sm" variant="secondary" onClick={() => practiceAgain(t.key)}><RotateCcw size={14} />Luyện lại câu này</Button>}
               </span>
             )}
             {!strictLeft.length && t.verdict && expectedVerdict(mode, t.score) && expectedVerdict(mode, t.score) !== t.verdict && (

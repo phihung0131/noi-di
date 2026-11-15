@@ -97,7 +97,7 @@ export const STRICT_RULE = { shadowAcc: 95, listeningHieu: 90, listeningTraloi: 
  * Hỏi đáp: câu nói còn khác bản sửa. Đọc nhại: còn khác câu gốc hoặc ACC dưới 95. Nghe hiểu: HIEU/TRALOI dưới ngưỡng.
  * Trả về danh sách lý do; rỗng nghĩa là không thấy lỗi (không khẳng định đã đúng hết).
  */
-export function strictIssues(mode: string, t: Pick<ModelTurn, "transcript" | "fixed" | "score">): string[] {
+export function strictIssues(mode: string, t: Pick<ModelTurn, "transcript" | "fixed" | "score" | "errors">): string[] {
   if (!t.transcript || !t.score) return [];
   const out: string[] = [];
   if ((mode === "guided" || mode === "shadow") && t.fixed) {
@@ -105,6 +105,11 @@ export function strictIssues(mode: string, t: Pick<ModelTurn, "transcript" | "fi
     const ops = diffWords(t.transcript, t.fixed);
     const n = ops.filter((o, i) => o.op !== "same" && (i === 0 || ops[i - 1].op === "same")).length;
     if (n) out.push(mode === "shadow" ? `${n} chỗ khác câu gốc` : `${n} chỗ còn khác bản sửa`);
+  }
+  // Giám khảo đôi khi chép transcript đã sửa sẵn, nên đếm cả lỗi ngữ pháp/từ vựng/tự nhiên trong bảng lỗi.
+  if (mode === "guided") {
+    const n = (t.errors ?? []).filter((r) => /ngữ pháp|từ vựng|tự nhiên|grammar|vocab|natural/i.test(r.type)).length;
+    if (n) out.push(`${n} lỗi ngữ pháp/từ vựng trong bảng lỗi`);
   }
   if (mode === "shadow") {
     const acc = scoreOf(t.score, "ACC");

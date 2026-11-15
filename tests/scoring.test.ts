@@ -77,3 +77,14 @@ describe("strictIssues", () => {
     expect(strictIssues("guided", { transcript: "x", score: undefined })).toEqual([]);
   });
 });
+
+describe("strictIssues: bảng lỗi", () => {
+  it("đếm lỗi ngữ pháp/từ vựng trong bảng, bỏ qua phát âm", async () => {
+    const { strictIssues } = await import("@/lib/scoring");
+    const errors = [
+      { type: "Ngữ pháp", said: "I help", fix: "I helped", why: "" },
+      { type: "Phát âm", said: "visited", fix: "visited", why: "" },
+    ];
+    expect(strictIssues("guided", { transcript: "I helped her", fixed: "I helped her", score: [{ key: "NATIVE", value: "90" }], errors })).toEqual(["1 lỗi ngữ pháp/từ vựng trong bảng lỗi"]);
+  });
+});
