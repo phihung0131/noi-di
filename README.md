@@ -21,15 +21,18 @@ Nói Đi là tiện ích Chrome (Manifest V3) chạy trên [Google AI Studio](ht
 
 **Luyện nói thật sự**
 - **8 ngôn ngữ:** English (Mỹ, Anh), 日本語, 한국어, 中文, Deutsch, Français, Español, Português (Brasil). Có phiên âm (romaji, romanization, pinyin) cho ngôn ngữ không dùng chữ Latin.
-- **3 chế độ:** *Hỏi đáp có chấm*, *Hội thoại* tự nhiên, *Nghe hiểu* (nghe đoạn ngắn rồi trả lời bằng lời). Trình độ A2 đến C1.
+- **4 chế độ:** *Hỏi đáp có chấm*, *Hội thoại* tự nhiên, *Nghe hiểu* (nghe đoạn ngắn rồi trả lời bằng lời), *Đọc nhại* (nghe câu người bản xứ rồi đọc lại y hệt). Trình độ A2 đến C1. Có gợi ý tình huống nhập vai.
 - **Điểm trên 100, "giống người bản xứ":** gồm phát âm và ngữ điệu, trôi chảy, tự nhiên, ngữ pháp, từ vựng. Model nghe trực tiếp audio của bạn, không chỉ đọc transcript.
+- **Điểm đáng tin hơn:** tiện ích tự tính lại điểm tổng theo công thức, đo trôi chảy từ sóng âm (số lần ngừng, tốc độ nói) và gửi kèm cho giám khảo cùng điểm lượt trước và các lỗi đã mắc. Lỗi phát âm giám khảo chưa chắc được tách riêng.
 - **Nhận xét cụ thể:** transcript, **bản sửa đầy đủ** câu trả lời của bạn, **bản người bản xứ sẽ nói**, bảng lỗi (loại, bạn nói, sửa thành, vì sao), từ phát âm sai kèm cách đọc và một bài tập sửa lỗi.
 - **Tổng kết buổi** và biểu đồ điểm qua các lượt.
 
 **Nghe và ghi âm tiện tay**
 - Nghe câu hỏi, câu mẫu (cả bản chậm) bằng giọng của Chrome, tự đọc câu hỏi mới.
 - Ghi âm có sóng âm trực tiếp, **nghe lại trước khi gửi** và nghe lại từng câu đã gửi. Phím tắt: `Alt+R` ghi/dừng, `Alt+P` nghe lại, `Alt+Enter` gửi, `Alt+L` nghe lại câu hỏi.
-- **Sổ từ vựng:** lưu câu mẫu và cách nói hay, nghe lại, tìm kiếm. Xem được cả trong popup.
+- **Sổ từ vựng:** lưu câu mẫu, cách nói hay và lỗi cần sửa, nghe lại, xuất CSV cho Anki. Xem được cả trong popup.
+- **Tiến bộ:** chuỗi ngày luyện, trung bình 7 ngày, biểu đồ điểm và tiêu chí yếu nhất qua các buổi.
+- **Tự dừng khi im lặng** (tuỳ chọn).
 
 **Bền với thực tế**
 - Xử lý các tình huống thường gặp: nói sai ngôn ngữ, gõ bừa, trả lời quá ngắn, giám khảo trả lời cắt ngang.
@@ -72,7 +75,7 @@ Nói Đi không gọi API riêng. Nó **điều khiển giao diện AI Studio đ
 
 ## Quyền riêng tư
 
-- Dữ liệu (cài đặt, sổ từ vựng, mốc luyện tập) **chỉ lưu trong trình duyệt** bằng `chrome.storage.local`. Không có máy chủ, không thống kê, không theo dõi.
+- Dữ liệu (cài đặt, sổ từ vựng, lịch sử điểm, mốc luyện tập) **chỉ lưu trong trình duyệt** bằng `chrome.storage.local`. Không có máy chủ, không thống kê, không theo dõi.
 - Giọng nói được gửi tới Google **qua AI Studio, dưới tài khoản của chính bạn**, giống như khi bạn tự ghi âm trên trang đó. Nói Đi không gửi đi đâu khác.
 - Bản nghe lại chỉ nằm trong bộ nhớ của tab và mất khi tải lại trang.
 - Ảnh chụp màn hình chỉ được chụp khi bạn bấm và tải về máy. Báo sự cố chỉ **mở Google Form đã điền sẵn** để bạn kiểm tra rồi tự bấm Gửi; ảnh (nếu có) do bạn tự đính kèm trong form.
@@ -81,7 +84,7 @@ Chi tiết: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 | Quyền | Dùng để |
 |---|---|
-| `storage` | lưu cài đặt, sổ từ vựng, mốc luyện tập |
+| `storage` | lưu cài đặt, sổ từ vựng, lịch sử điểm, mốc luyện tập |
 | `activeTab` | popup điều khiển tab AI Studio bạn đang xem |
 | `host: aistudio.google.com` | chạy giao diện trên AI Studio; chụp màn hình khi báo sự cố |
 
@@ -99,6 +102,11 @@ Công nghệ: React 18, TypeScript, Vite, Tailwind CSS, Radix UI (kiểu shadcn/
 src/
   lib/prompt.ts       prompt hệ thống + giao thức marker      ┐ sửa cùng nhau
   lib/parser.ts       đọc kết quả theo marker                 ┘
+  lib/prompt-examples.ts  ví dụ một lượt hoàn chỉnh mỗi chế độ
+  lib/scoring.ts      tính lại điểm theo công thức trong prompt
+  lib/fluency.ts      đo ngừng, im lặng, tốc độ nói từ sóng âm
+  lib/meta.ts         dòng [NOIDI-META] gửi kèm audio
+  lib/diff.ts         so từng từ (chỗ đã sửa, đọc nhại)
   lib/selectors.ts    mọi điểm bám vào AI Studio
   lib/bridge.ts       thao tác trên DOM AI Studio
   lib/controller.ts   trạng thái và luồng chính

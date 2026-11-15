@@ -27,3 +27,10 @@ export function useNoteActions() {
   });
   return { add, remove };
 }
+
+const csvCell = (v: string) => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+/** CSV cho Anki / Excel: mặt trước là câu ngôn ngữ luyện nói, mặt sau là nghĩa/giải thích. */
+export function notesCsv(items: NoteItem[]): string {
+  const rows = [["front", "back", "kind", "lang", "date"], ...items.map((n) => [n.text, n.tr ?? "", n.kind, n.lang, new Date(n.at).toISOString().slice(0, 10)])];
+  return rows.map((r) => r.map(csvCell).join(",")).join("\n");
+}

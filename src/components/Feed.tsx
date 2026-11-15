@@ -14,6 +14,7 @@ export function Feed() {
   const hydrating = useStore(appStore, (s) => s.hydrating);
   const stalled = useStore(appStore, (s) => s.stalled);
   const nudge = useStore(appStore, (s) => s.nudge);
+  const sent = useStore(appStore, (s) => s.sent);
   const locked = useStore(appStore, (s) => isLocked(s));
   const scroller = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -52,7 +53,8 @@ export function Feed() {
           if (t.role === "user") return <UserCard key={t.key} turn={t} />;
           const idx = turns.indexOf(t);
           if (generating && idx === turns.length - 1) return <LivePanel key={t.key} />;
-          return <ExaminerCard key={t.key} turn={t} latest={idx === lastModel} streaming={generating && idx === turns.length - 1} answered={idx < turns.length - 1} />;
+          const prevUser = turns.slice(0, idx).reverse().find((x) => x.role === "user");
+          return <ExaminerCard key={t.key} turn={t} latest={idx === lastModel} streaming={generating && idx === turns.length - 1} answered={idx < turns.length - 1} rec={prevUser?.role === "user" ? sent[prevUser.idx] : undefined} />;
         })}
         {summaryDone && !stalled && (
           <SupportCard title="Hoàn thành một buổi luyện, giỏi lắm!" text="Nói Đi miễn phí và do một người làm. Nếu buổi luyện này có ích, mời tác giả ly cà phê để mình có thêm sức làm tiếp nhé." onAction={() => setDialog("donate")} />

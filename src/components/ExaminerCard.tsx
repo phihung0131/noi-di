@@ -1,10 +1,14 @@
 import { useStore } from "@tanstack/react-store";
-import { AlertTriangle, ChevronDown, Dumbbell, EyeOff, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
+import { Activity, AlertTriangle, BookmarkPlus, ChevronDown, Dumbbell, EyeOff, Eye, Languages, Lightbulb, MessageSquareQuote, RefreshCw, Timer } from "lucide-react";
 import { memo, useEffect, useRef, useState } from "react";
-import { appStore, openReport, retryReply, setDialog, skipQuestion, switchModelAndRetry } from "@/lib/controller";
+import { appStore, openReport, retryReply, setDialog, skipQuestion, switchModelAndRetry, toast, type SentRec } from "@/lib/controller";
+import { diffWords } from "@/lib/diff";
+import { analyzePeaks, speechRate } from "@/lib/fluency";
+import { useNoteActions } from "@/lib/notes";
+import { expectedVerdict } from "@/lib/scoring";
 import { classifyError } from "@/lib/errors";
-import { speakable, splitPhrase } from "@/lib/langs";
-import type { ModelTurn } from "@/lib/types";
+import { parsePron, speakable, splitPhrase } from "@/lib/langs";
+import type { ErrorRow, ModelTurn } from "@/lib/types";
 import { cn, fmtTime } from "@/lib/utils";
 import { Fold, SaveBtn, SpeakBtn, useLang } from "./bits";
 import { Score } from "./Score";
@@ -44,6 +48,71 @@ function PhraseList({ title, items, idp, lang }: { title: string; items: string[
         })}
       </ul>
     </div>
+  );
+}
+
+/** Mục phát âm: tách mục giám khảo chắc chắn và mục "có thể" (độ chắc vừa). */
+function PronList({ items, idp, lang }: { items: string[]; idp: string; lang: string }) {
+  const parsed = items.map((v, i) => ({ ...parsePron(v), i }));
+  const sure = parsed.filter((p) => p.conf === "high"), maybe = parsed.filter((p) => p.conf === "medium");
+  const row = (p: (typeof parsed)[number], dim: boolean) => (
+    <li key={p.i} className={cn("flex items-center gap-2 px-3 py-2", dim && "opacity-75")}>
+      <div className="min-w-0 flex-1"><span className="font-serif text-[15px] font-semibold">{p.phrase}</span>{p.gloss && <span className="ml-2 text-sm text-muted-foreground">{p.gloss}</span>}</div>
+      <SpeakBtn id={`${idp}:${p.i}`} text={speakable(p.phrase)} compact label={p.phrase} />
+      <SaveBtn note={{ text: p.phrase, tr: p.gloss, lang, kind: "vocab" }} />
+    </li>
+  );
+  return (
+    <div>
+      <h4 className="mb-1.5 text-sm font-medium">Phát âm cần sửa</h4>
+      {!!sure.length && <ul className="divide-y divide-border rounded-lg border border-border">{sure.map((p) => row(p, false))}</ul>}
+      {!!maybe.length && (
+        <>
+          <p className="mb-1 mt-2 text-xs text-muted-foreground">Có thể lệch (giám khảo chưa chắc, có khi do micro). Nghe lại bản ghi của bạn để tự kiểm tra.</p>
+          <ul className="divide-y divide-border rounded-lg border border-dashed border-border">{maybe.map((p) => row(p, true))}</ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** So từng từ: chữ gạch là phần bạn nói bị bỏ/đổi, chữ tô xanh là phần cần nói. */
+function DiffLine({ from, to, label }: { from: string; to: string; label: string }) {
+  const ops = diffWords(from, to);
+  if (!ops.some((o) => o.op !== "same")) return <p className="mt-2 text-xs text-success">{label}: khớp hoàn toàn.</p>;
+  return (
+    <div className="mt-2 border-t border-border pt-2">
+      <div className="mb-1 text-xs text-muted-foreground">{label} <span className="ml-1"><del className="text-destructive/80">gạch</del> = bạn nói, <ins className="rounded bg-success/15 px-0.5 text-success no-underline">xanh</ins> = cần nói</span></div>
+      <p className="font-serif text-[15px] leading-relaxed">
+        {ops.map((o, i) => o.op === "same" ? <span key={i}>{o.text} </span>
+          : o.op === "del" ? <del key={i} className="text-destructive/80 decoration-destructive/60">{o.text} </del>
+          : <ins key={i} className="rounded bg-success/15 px-0.5 text-success no-underline">{o.text} </ins>)}
+      </p>
+    </div>
+  );
+}
+
+/** Số đo trôi chảy khách quan từ bản ghi đã gửi. */
+function FluencyStats({ rec, transcript }: { rec: SentRec; transcript?: string }) {
+  const f = analyzePeaks(rec.peaks, rec.ms);
+  if (!f) return null;
+  const wpm = transcript ? speechRate(transcript, f) : undefined;
+  const parts = [`${(f.durMs / 1000).toFixed(0)}s`, `nói ${(f.speechMs / 1000).toFixed(0)}s`, `${f.longPauses} lần ngừng >2s`, wpm ? `~${wpm} từ/phút` : ""].filter(Boolean);
+  return (
+    <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground" title="Đo tự động từ mức âm micro, chỉ là ước lượng. Người bản xứ nói chuyện thường khoảng 130–170 từ/phút.">
+      <Activity size={13} />{parts.join(" · ")}
+    </p>
+  );
+}
+
+function SaveErrors({ rows, lang }: { rows: ErrorRow[]; lang: string }) {
+  const { add } = useNoteActions();
+  const [done, setDone] = useState(false);
+  return (
+    <Button variant="ghost" size="sm" disabled={done} onClick={() => {
+      rows.forEach((r) => add.mutate({ text: r.fix, tr: `Bạn nói: ${r.said}${r.why ? " · " + r.why : ""}`, lang, kind: "error" }));
+      setDone(true); toast(`Đã lưu ${rows.length} lỗi vào sổ.`);
+    }}><BookmarkPlus size={15} />{done ? "Đã lưu lỗi vào sổ" : `Lưu ${rows.length} lỗi vào sổ`}</Button>
   );
 }
 
@@ -129,7 +198,7 @@ const Skeleton = ({ label }: { label?: string }) => (
   </div>
 );
 
-export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming, answered }: { turn: ModelTurn; latest: boolean; streaming: boolean; answered: boolean }) {
+export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming, answered, rec }: { turn: ModelTurn; latest: boolean; streaming: boolean; answered: boolean; rec?: SentRec }) {
   const mode = useStore(appStore, (s) => s.session.mode);
   const listenOnly = useStore(appStore, (s) => s.prefs.listenOnly);
   const showTrans = useStore(appStore, (s) => s.prefs.showTrans);
@@ -168,16 +237,25 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
                 {t.verdict === "pass" ? "Qua câu" : "Nói lại câu này"}
               </span>
             )}
+            {t.verdict && expectedVerdict(mode, t.score) && expectedVerdict(mode, t.score) !== t.verdict && (
+              <span className="text-xs text-muted-foreground">{t.verdict === "pass" ? "Theo điểm tính lại, câu này chưa đạt mốc qua câu. Nên nói lại cho chắc." : "Theo điểm tính lại, câu này đã đạt mốc qua câu."}</span>
+            )}
           </div>
           {t.transcript && (
             <blockquote className="border-l-2 border-primary/40 pl-3 font-serif text-[15px] italic text-muted-foreground">
               “{t.transcript}”
             </blockquote>
           )}
-          {t.score && !pending("SCORE") && <Score items={t.score} />}
+          {t.transcript && rec && <FluencyStats rec={rec} transcript={t.transcript} />}
+          {t.score && !pending("SCORE") && <Score items={t.score} raw={t.scoreRaw} />}
           {pending("SCORE") && <Skeleton label="Đang chấm điểm" />}
           {recording && !!(t.fixed || t.better || t.drill || t.feedback || t.pron?.length || t.vocab?.length) && <Concealed title="Câu đã sửa, câu người bản xứ sẽ nói, chi tiết lỗi và bài tập" />}
-          {t.fixed && !recording && !pending("FIXED") && <Rewrite title="Câu của bạn, đã sửa" text={t.fixed} id={audioId("fixed")} lang={lang} tone="fix" />}
+          {t.fixed && !recording && !pending("FIXED") && (
+            <div>
+              <Rewrite title={mode === "shadow" ? "Câu gốc" : "Câu của bạn, đã sửa"} text={t.fixed} id={audioId("fixed")} lang={lang} tone="fix" />
+              {t.transcript && <DiffLine from={t.transcript} to={t.fixed} label={mode === "shadow" ? "So với câu gốc" : "Chỗ đã sửa"} />}
+            </div>
+          )}
           {t.better && !recording && !pending("BETTER") && <Rewrite title="Người bản xứ sẽ nói" text={t.better} id={audioId("better")} lang={lang} tone="native" />}
           {pending("FEEDBACK") && <Skeleton label="Đang soạn nhận xét" />}
           {t.feedback && !recording && !pending("FEEDBACK") && (
@@ -185,10 +263,13 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
               <button className="flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => tgl("fb")} aria-expanded={fbOpen}>
                 <span>Chi tiết lỗi và gợi ý</span><ChevronDown size={16} className={cn("transition-transform", fbOpen && "rotate-180")} />
               </button>
-              <Fold open={fbOpen}><div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.feedback }} /></Fold>
+              <Fold open={fbOpen}>
+                <div className="prose-fb" dangerouslySetInnerHTML={{ __html: t.feedback }} />
+                {!!t.errors?.length && <div className="mt-2 flex justify-end"><SaveErrors rows={t.errors} lang={lang} /></div>}
+              </Fold>
             </div>
           )}
-          {!!t.pron?.length && !recording && !pending("PRON") && <PhraseList title="Phát âm cần sửa" items={t.pron} idp={audioId("pron")} lang={lang} />}
+          {!!t.pron?.length && !recording && !pending("PRON") && <PronList items={t.pron} idp={audioId("pron")} lang={lang} />}
           {t.drill && !recording && !pending("DRILL") && (
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
               <div className="mb-1 flex items-center gap-1.5 text-sm font-medium"><Dumbbell size={15} className="text-primary" />Bài tập sửa lỗi</div>
@@ -219,6 +300,7 @@ export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming
         <section className={cn("rounded-lg border bg-card p-5", latest ? "border-primary/50" : "border-border")}>
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             {t.q.n && <span className="rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground">Câu {t.q.n}</span>}
+            {mode === "shadow" && <span>Nghe rồi đọc lại y hệt, cả nhịp và ngữ điệu</span>}
           </div>
           <div className={cn(concealQ && "select-none blur-md")} onClick={concealQ ? () => tgl("reveal") : undefined} aria-hidden={concealQ}>
             <Words id={audioId("q")} text={t.q.text} className="font-serif text-[26px] font-medium leading-snug tracking-[-0.005em]" />

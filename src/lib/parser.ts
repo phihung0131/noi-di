@@ -1,5 +1,6 @@
 import { SEL } from "./selectors";
-import type { ModelTurn, ScoreItem } from "./types";
+import { normalizeScore } from "./scoring";
+import type { ErrorRow, ModelTurn, ScoreItem } from "./types";
 
 const THOUGHT = SEL.thought.join(", ");
 
@@ -36,7 +37,7 @@ export function topBlocks(turn: Element): Element[] {
 
 interface Section { name: string; args: string; paras: string[]; html: string[] }
 const MARKER = /^\s*@@([A-Z]+)(?:[ \t]+(.*))?$/;
-const KNOWN = new Set(["PART", "Q", "SAY", "TR", "ROMAN", "HINT", "SAMPLE", "SAMPLETR", "SAMPLEROMAN", "TRANSCRIPT", "SCORE", "FEEDBACK", "VOCAB", "PRON", "VERDICT", "PREP", "FIXED", "BETTER", "DRILL"]);
+const KNOWN = new Set(["PART", "Q", "SAY", "TR", "ROMAN", "HINT", "SAMPLE", "SAMPLETR", "SAMPLEROMAN", "TRANSCRIPT", "SCORE", "FEEDBACK", "VOCAB", "PRON", "VERDICT", "PREP", "FIXED", "BETTER", "DRILL", "NOTES"]);
 
 /** Tham số có thể nằm ngay trên dòng marker hoặc ở dòng kế tiếp (AI Studio gộp chung một đoạn). */
 const argText = (s: Section) => `${s.args} ${s.paras.join(" ")}`.trim();
@@ -49,6 +50,27 @@ function listItems(sec: Section | undefined, blocks: Element[] | undefined): str
   blocks?.forEach((b) => b.querySelectorAll("li").forEach((li) => items.push((li.textContent ?? "").replace(/\s+/g, " ").trim())));
   if (!items.length) sec.paras.forEach((p) => items.push(p.replace(/^[-*•]\s*/, "")));
   return items.filter(Boolean);
+}
+
+const cellText = (c: Element) => (c.textContent ?? "").replace(/\s+/g, " ").trim();
+const HEADER = /^(loại|type|kind)$/i;
+
+/** Tách bảng lỗi 4 cột "Loại | Bạn nói | Sửa thành | Vì sao" trong phần nhận xét thành dữ liệu. */
+export function errorRows(sec: Section | undefined, blocks: Element[] | undefined): ErrorRow[] {
+  if (!sec) return [];
+  const rows: string[][] = [];
+  blocks?.filter((b) => b.tagName === "TABLE").forEach((t) => t.querySelectorAll("tr").forEach((tr) => {
+    if (tr.querySelector("th")) return;
+    rows.push(Array.from(tr.children).map(cellText));
+  }));
+  // Bảng markdown chưa được render (AI Studio để nguyên dấu |).
+  if (!rows.length) sec.paras.forEach((p) => {
+    if (!/^\|?.+\|.+\|/.test(p) || /^\|?\s*:?-{2,}/.test(p)) return;
+    rows.push(p.replace(/^\||\|$/g, "").split("|").map((c) => c.trim()));
+  });
+  return rows
+    .filter((r) => r.length >= 4 && !HEADER.test(r[0]) && (r[1] || r[2]))
+    .map((r) => ({ type: r[0], said: r[1], fix: r[2], why: r.slice(3).join(" ") }));
 }
 
 export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
@@ -101,7 +123,8 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
   const fixed = get("FIXED"); if (fixed) out.fixed = unquote(oneLine(fixed.paras));
   const better = get("BETTER"); if (better) out.better = unquote(oneLine(better.paras));
   const drill = get("DRILL"); if (drill) out.drill = drill.html.join("");
-  const fb = get("FEEDBACK"); if (fb) out.feedback = fb.html.join("");
+  const fb = get("FEEDBACK");
+  if (fb) { out.feedback = fb.html.join(""); const er = errorRows(fb, secBlocks.get(fb)); if (er.length) out.errors = er; }
   const vocab = get("VOCAB"); if (vocab) out.vocab = listItems(vocab, secBlocks.get(vocab));
   const pron = get("PRON"); if (pron) out.pron = listItems(pron, secBlocks.get(pron));
   const part = get("PART"); if (part) out.part = part.args.replace(/\D/g, "") || undefined;
@@ -111,7 +134,11 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
   if (sc) {
     const items: ScoreItem[] = [];
     for (const m of argText(sc).matchAll(/([A-Z]+)\s*[:=]?\s*([0-9]+(?:\.[0-9])?)/g)) items.push({ key: m[1], value: m[2] });
-    if (items.length) out.score = items;
+    if (items.length) {
+      // Chỉ tính lại cho lượt đã chấm thật (có transcript); bản tổng kết giữ nguyên số trung bình.
+      if (out.transcript !== undefined) { const n = normalizeScore(items, out.transcript); out.score = n.items; if (n.raw) out.scoreRaw = n.raw; }
+      else out.score = items.map((i) => ({ key: i.key, value: String(Math.max(0, Math.min(100, Math.round(parseFloat(i.value))))) }));
+    }
   }
   // Model cũ / lệch giao thức: hiện nguyên văn như phần nhận xét.
   if (!secs.length && pre.length) out.feedback = pre.join("");
@@ -120,7 +147,7 @@ export function parseModelElement(turn: Element): Omit<ModelTurn, "key"> {
 
 const LABELS: Record<string, string> = {
   TRANSCRIPT: "Bạn nói", SCORE: "Điểm", FIXED: "Bản sửa đầy đủ", BETTER: "Người bản xứ sẽ nói", FEEDBACK: "Nhận xét", PRON: "Phát âm", VOCAB: "Nói tự nhiên hơn",
-  DRILL: "Bài tập", VERDICT: "Kết luận", Q: "Câu hỏi", TR: "Dịch", SAY: "Giám khảo nói", HINT: "Gợi ý", SAMPLE: "Câu mẫu", SAMPLETR: "Dịch câu mẫu", ROMAN: "Phiên âm", SAMPLEROMAN: "Phiên âm câu mẫu", PREP: "Chuẩn bị", PART: "Phần",
+  DRILL: "Bài tập", NOTES: "Giám khảo đang phân tích", VERDICT: "Kết luận", Q: "Câu hỏi", TR: "Dịch", SAY: "Giám khảo nói", HINT: "Gợi ý", SAMPLE: "Câu mẫu", SAMPLETR: "Dịch câu mẫu", ROMAN: "Phiên âm", SAMPLEROMAN: "Phiên âm câu mẫu", PREP: "Chuẩn bị", PART: "Phần",
 };
 export interface LiveSection { label: string; text: string }
 
@@ -128,7 +155,9 @@ export interface LiveSection { label: string; text: string }
 export function liveSections(turn: Element): LiveSection[] {
   const out: LiveSection[] = [];
   let cur: LiveSection | null = null;
-  const push = (line: string) => { if (!line.trim()) return; if (!cur) { cur = { label: "", text: "" }; out.push(cur); } cur.text += (cur.text ? "\n" : "") + line.trim(); };
+  // Mục @@NOTES là nháp chấm điểm của giám khảo: chỉ hiện nhãn, không hiện nội dung.
+  let hidden = false;
+  const push = (line: string) => { if (!line.trim() || hidden) return; if (!cur) { cur = { label: "", text: "" }; out.push(cur); } cur.text += (cur.text ? "\n" : "") + line.trim(); };
   for (const b of topBlocks(turn)) {
     if (b.tagName === "TABLE") {
       b.querySelectorAll("tr").forEach((tr) => push(Array.from(tr.children).map((c) => (c.textContent ?? "").replace(/\s+/g, " ").trim()).join("  |  ")));
@@ -138,7 +167,7 @@ export function liveSections(turn: Element): LiveSection[] {
     for (const line of textOf(b).split("\n")) {
       const m = MARKER.exec(line);
       if (m) {
-        if (KNOWN.has(m[1])) { cur = { label: LABELS[m[1]] ?? m[1], text: "" }; out.push(cur); if (m[2]) push(m[2]); }
+        if (KNOWN.has(m[1])) { hidden = false; cur = { label: LABELS[m[1]] ?? m[1], text: "" }; out.push(cur); if (m[2]) push(m[2]); hidden = m[1] === "NOTES"; }
         continue;
       }
       push(line.replace(/\s+/g, " "));

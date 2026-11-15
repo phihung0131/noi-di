@@ -31,7 +31,14 @@ export const MODES = [
     detail: "Trò chuyện tự nhiên với một người bạn bản xứ: họ phản hồi ngắn rồi hỏi tiếp để bạn nói tiếp. Mỗi lượt chỉ sửa nhanh tối đa 2 lỗi để không cắt mạch, chấm điểm đầy đủ mỗi 3 lượt." },
   { id: "listening", label: "Nghe hiểu", hint: "Nghe đoạn ngắn rồi trả lời bằng lời",
     detail: "Bạn nghe một đoạn 2–4 câu (không thấy chữ), rồi trả lời câu hỏi kiểm tra hiểu bằng giọng nói. Chữ chỉ hiện sau khi bạn trả lời. Được chấm theo mức hiểu ý chính, không chấm phát âm." },
+  { id: "shadow", label: "Đọc nhại", hint: "Nghe câu mẫu rồi đọc lại y hệt",
+    detail: "Giám khảo đưa một câu tự nhiên của người bản xứ. Bạn nghe (có bản chậm), rồi đọc to y hệt cả nhịp và ngữ điệu. Vì đã biết câu gốc nên chấm phát âm chính xác nhất: từng từ đọc sai, bỏ sót, sai trọng âm. Đạt 70 mới sang câu mới." },
 ] as const;
+/** Gợi ý chủ đề / tình huống nhập vai cho ô "Chủ đề". */
+export const TOPIC_PRESETS = [
+  "Phỏng vấn xin việc", "Gọi món ở nhà hàng", "Đi khám bệnh", "Họp công việc", "Làm thủ tục ở sân bay",
+  "Hỏi đường", "Mua sắm, trả giá", "Giới thiệu bản thân", "Kể về cuối tuần", "Nêu ý kiến về công nghệ",
+];
 export const DEFAULT_CONFIG = { lang: "en-US", mode: "guided", level: "B1", output: "vi", topic: "" } as const;
 
 /** Nhãn ngắn ở header, có vùng miền khi cùng ngôn ngữ có nhiều biến thể. */
@@ -57,4 +64,18 @@ export function speakable(s: string): string {
 export function splitPhrase(v: string): [string, string] {
   const [phrase, ...rest] = v.split(/\s[—–-]\s|:\s+(?=\S)/);
   return [phrase.trim(), rest.join(" · ").trim()];
+}
+
+const CONF = /^(?:(?:độ\s*)?(?:chắc(?:\s*chắn)?|tin\s*cậy)|confidence)?\s*[:：]?\s*(cao|vừa|trung bình|thấp|high|medium|low)\s*\.?$/i;
+/**
+ * Mục phát âm "từ — cách đọc — lỗi — cao|vừa". Phần cuối là độ chắc chắn của giám khảo:
+ * "vừa" (hoặc thấp) được giao diện hiện riêng là "có thể", vì nghe qua audio dễ nhầm.
+ */
+export function parsePron(v: string): { phrase: string; gloss: string; conf: "high" | "medium" } {
+  const segs = v.split(/\s[—–-]\s/);
+  let conf: "high" | "medium" = "high";
+  const m = segs.length > 1 ? CONF.exec(segs[segs.length - 1].trim()) : null;
+  if (m) { conf = /cao|high/i.test(m[1]) ? "high" : "medium"; segs.pop(); }
+  const [phrase, gloss] = splitPhrase(segs.join(" — "));
+  return { phrase, gloss, conf };
 }

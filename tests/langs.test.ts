@@ -31,3 +31,15 @@ describe("splitPhrase", () => {
     expect(splitPhrase("pop — /pɑːp/ — mím môi")).toEqual(["pop", "/pɑːp/ · mím môi"]);
   });
 });
+
+import { parsePron } from "@/lib/langs";
+describe("parsePron", () => {
+  it("tách độ chắc chắn ở cuối", () => {
+    expect(parsePron("with — /wɪð/ — đọc thành /wɪt/ — cao")).toEqual({ phrase: "with", gloss: "/wɪð/ · đọc thành /wɪt/", conf: "high" });
+    expect(parsePron("seafood — /ˈsiːfuːd/ — mất /d/ — vừa").conf).toBe("medium");
+    expect(parsePron("think — /θɪŋk/ — độ chắc: thấp").conf).toBe("medium");
+  });
+  it("mục cũ không có độ chắc chắn coi như chắc", () => {
+    expect(parsePron("work — /wɜːrk/ — đọc thành /wɔːk/")).toEqual({ phrase: "work", gloss: "/wɜːrk/ · đọc thành /wɔːk/", conf: "high" });
+  });
+});
