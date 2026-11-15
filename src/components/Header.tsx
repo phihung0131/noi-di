@@ -36,7 +36,7 @@ export function Header() {
   const model = useStore(appStore, (s) => s.model);
   const syncing = useStore(appStore, (s) => s.syncing);
   const locked = useStore(appStore, (s) => isLocked(s));
-  const chips = [langChip(session.lang), session.mode === "exam" ? `Luyện thi ${examOf(session.exam, session.lang)?.name ?? ""}`.trim() : MODES.find((m) => m.id === session.mode)?.label, session.level, session.output === "vi" ? "Giải thích tiếng Việt" : "Explain in English", session.strict && session.mode !== "chat" ? "Luyện tới khi đúng" : ""].filter(Boolean);
+  const chips = [langChip(session.lang), session.mode === "exam" ? `Luyện thi ${examOf(session.exam, session.lang)?.name ?? ""}`.trim() : MODES.find((m) => m.id === session.mode)?.label, session.level, session.output === "vi" ? "Giải thích tiếng Việt" : "Explain in English", session.strict && session.mode !== "chat" && session.mode !== "exam" ? "Luyện tới khi đúng" : ""].filter(Boolean);
   const canSummarize = turns.filter((t) => t.role === "user" && !t.hidden).length >= 1 && !generating;
 
   return (
