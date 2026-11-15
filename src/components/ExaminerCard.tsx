@@ -234,7 +234,7 @@ const Skeleton = ({ label }: { label?: string }) => (
 
 export const ExaminerCard = memo(function ExaminerCard({ turn, latest, streaming, answered, rec }: { turn: ModelTurn; latest: boolean; streaming: boolean; answered: boolean; rec?: SentRec }) {
   const mode = useStore(appStore, (s) => s.session.mode);
-  const strict = useStore(appStore, (s) => !!s.session.strict && s.session.mode !== "chat");
+  const strict = useStore(appStore, (s) => !!s.session.strict && s.session.mode !== "chat" && s.session.mode !== "exam");
   const strictLeft = strict ? strictIssues(mode, turn) : [];
   // Luyện thi: tên phần hiện tại (phần được in ở lượt này hoặc gần nhất trước đó).
   const part = useStore(appStore, (s) => {
