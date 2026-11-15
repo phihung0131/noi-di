@@ -7,6 +7,8 @@ export interface SessionConfig {
   level: string;
   output: OutLang;
   topic: string;
+  /** Luyện tới khi đúng: chỉ qua câu mới khi nói đúng hết, không chỉ đủ điểm (không áp dụng cho Hội thoại). */
+  strict?: boolean;
 }
 
 export interface Prefs {
@@ -82,6 +84,10 @@ export interface NoteItem {
   lang: string;
   kind: "sample" | "vocab" | "question" | "error";
   at: number;
+  /** Ôn theo lịch (src/lib/srs.ts): hộp Leitner, thời điểm đến hạn, số lần đã ôn */
+  box?: number;
+  due?: number;
+  reviews?: number;
 }
 
 export type RecState = "idle" | "starting" | "recording" | "stopping" | "recorded" | "sending";

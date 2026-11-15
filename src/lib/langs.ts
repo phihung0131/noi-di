@@ -39,7 +39,7 @@ export const TOPIC_PRESETS = [
   "Phỏng vấn xin việc", "Gọi món ở nhà hàng", "Đi khám bệnh", "Họp công việc", "Làm thủ tục ở sân bay",
   "Hỏi đường", "Mua sắm, trả giá", "Giới thiệu bản thân", "Kể về cuối tuần", "Nêu ý kiến về công nghệ",
 ];
-export const DEFAULT_CONFIG = { lang: "en-US", mode: "guided", level: "B1", output: "vi", topic: "" } as const;
+export const DEFAULT_CONFIG = { lang: "en-US", mode: "guided", level: "B1", output: "vi", topic: "", strict: false } as const;
 
 /** Nhãn ngắn ở header, có vùng miền khi cùng ngôn ngữ có nhiều biến thể. */
 export function langChip(lang: string): string {

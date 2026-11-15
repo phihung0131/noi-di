@@ -58,3 +58,18 @@ describe("1.1.1: nâng cấp prompt", () => {
     expect(buildPrompt(cfg("listening"))).toContain("@@SCORE NATIVE 67 | HIEU 70");
   });
 });
+
+describe("Luyện tới khi đúng", () => {
+  it("chỉ thêm luật khi bật, tắt thì prompt giữ nguyên", () => {
+    for (const m of ["guided", "shadow", "listening", "chat"] as const) {
+      const off = buildPrompt(cfg(m));
+      const on = buildPrompt({ ...cfg(m), strict: true });
+      expect(off).not.toContain("LUYỆN TỚI KHI ĐÚNG");
+      if (m === "chat") { expect(on).toBe(off); continue; }
+      expect(on).toContain("LUYỆN TỚI KHI ĐÚNG");
+      expect(on).toContain("Luyện lại câu trước");
+      // mọi dòng của prompt thường vẫn còn nguyên trong prompt chặt
+      for (const line of off.split("\n")) expect(on).toContain(line);
+    }
+  });
+});

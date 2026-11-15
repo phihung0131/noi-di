@@ -15,6 +15,13 @@ import { Select } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { Tip } from "./ui/tooltip";
 
+const STRICT_HINT: Record<Mode, string> = {
+  guided: "Chỉ sang câu mới khi câu bạn nói không còn lỗi ngữ pháp, từ vựng hay phát âm rõ ràng. Đủ điểm mà còn lỗi vẫn phải nói lại.",
+  shadow: "Chỉ sang câu mới khi đọc đủ và đúng từng từ của câu gốc, khớp câu gốc từ 95 trở lên.",
+  listening: "Chỉ sang đoạn mới khi trả lời đúng mọi chi tiết của đoạn nghe.",
+  chat: "",
+};
+
 const Field = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
   <label className="block space-y-1.5"><span className="text-sm font-medium">{label}</span>{children}{hint && <span className="block text-xs text-muted-foreground">{hint}</span>}</label>
 );
@@ -54,6 +61,15 @@ export function NewSessionDialog() {
                 <input value={c.topic} onChange={(e) => upd({ topic: e.target.value })} placeholder="Ví dụ: du lịch, công việc, công nghệ" className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
               </Field>
             </div>
+            {c.mode !== "chat" && (
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+                <div>
+                  <div className="text-sm font-medium">Luyện tới khi đúng</div>
+                  <div className="text-xs text-muted-foreground">{STRICT_HINT[c.mode]}</div>
+                </div>
+                <Switch label="Luyện tới khi đúng" checked={!!c.strict} onCheckedChange={(v) => upd({ strict: v })} />
+              </div>
+            )}
             <div className="space-y-1.5">
               <span className="text-xs text-muted-foreground">Gợi ý tình huống nhập vai</span>
               <div className="flex flex-wrap gap-1.5">

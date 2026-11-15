@@ -1,4 +1,5 @@
-import type { ScoreItem } from "./types";
+import { diffWords } from "./diff";
+import type { ModelTurn, ScoreItem } from "./types";
 
 /**
  * Chấm lại phía client. Model hay tính sai phép cộng có trọng số và quên giới hạn điểm (cap),
@@ -86,4 +87,33 @@ export function expectedVerdict(mode: string, items: ScoreItem[] | undefined): "
   // Hỏi đáp: pass còn cần "trả lời đủ ý" (và từ 5 từ trở lên), phần mềm không tự xét được nên không khẳng định pass.
   if (mode === "guided") return undefined;
   return "pass";
+}
+
+/** Ngưỡng của chế độ "Luyện tới khi đúng" (khớp phần prompt tương ứng). */
+export const STRICT_RULE = { shadowAcc: 95, listeningHieu: 90, listeningTraloi: 80 } as const;
+
+/**
+ * "Luyện tới khi đúng": các chỗ còn sai mà phần mềm tự thấy được, độc lập với verdict của giám khảo.
+ * Hỏi đáp: câu nói còn khác bản sửa. Đọc nhại: còn khác câu gốc hoặc ACC dưới 95. Nghe hiểu: HIEU/TRALOI dưới ngưỡng.
+ * Trả về danh sách lý do; rỗng nghĩa là không thấy lỗi (không khẳng định đã đúng hết).
+ */
+export function strictIssues(mode: string, t: Pick<ModelTurn, "transcript" | "fixed" | "score">): string[] {
+  if (!t.transcript || !t.score) return [];
+  const out: string[] = [];
+  if ((mode === "guided" || mode === "shadow") && t.fixed) {
+    // Một chỗ sửa thường là cặp xoá + thêm liền nhau: đếm theo cụm, không theo từng thao tác.
+    const ops = diffWords(t.transcript, t.fixed);
+    const n = ops.filter((o, i) => o.op !== "same" && (i === 0 || ops[i - 1].op === "same")).length;
+    if (n) out.push(mode === "shadow" ? `${n} chỗ khác câu gốc` : `${n} chỗ còn khác bản sửa`);
+  }
+  if (mode === "shadow") {
+    const acc = scoreOf(t.score, "ACC");
+    if (acc !== undefined && acc < STRICT_RULE.shadowAcc) out.push(`khớp câu gốc ${acc} (cần ${STRICT_RULE.shadowAcc})`);
+  }
+  if (mode === "listening") {
+    const h = scoreOf(t.score, "HIEU"), r = scoreOf(t.score, "TRALOI");
+    if (h !== undefined && h < STRICT_RULE.listeningHieu) out.push(`mức hiểu ${h} (cần ${STRICT_RULE.listeningHieu})`);
+    if (r !== undefined && r < STRICT_RULE.listeningTraloi) out.push(`câu trả lời ${r} (cần ${STRICT_RULE.listeningTraloi})`);
+  }
+  return out;
 }
